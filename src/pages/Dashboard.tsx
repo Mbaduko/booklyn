@@ -16,6 +16,8 @@ import {
   CheckCircle2,
   CalendarClock
 } from 'lucide-react';
+import { ChartContainer } from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
@@ -62,6 +64,23 @@ export default function Dashboard() {
   };
 
   if (isLibrarian) {
+    // Example data for charts (replace with real data as needed)
+    const weeklyActivity = [
+      { day: 'Mon', Loans: 25, Returns: 16 },
+      { day: 'Tue', Loans: 32, Returns: 29 },
+      { day: 'Wed', Loans: 17, Returns: 21 },
+      { day: 'Thu', Loans: 45, Returns: 33 },
+      { day: 'Fri', Loans: 36, Returns: 42 },
+      { day: 'Sat', Loans: 52, Returns: 48 },
+      { day: 'Sun', Loans: 15, Returns: 12 },
+    ];
+    const categoryData = [
+      { name: 'Fiction', value: 400, color: '#22705e' },
+      { name: 'Non-Fiction', value: 300, color: '#fa7575' },
+      { name: 'Science', value: 200, color: '#fbbf24' },
+      { name: 'History', value: 150, color: '#64748b' },
+    ];
+
     return (
       <Layout>
         <motion.div
@@ -79,6 +98,7 @@ export default function Dashboard() {
               Here's an overview of your library
             </p>
           </motion.div>
+
 
           {/* Stats Grid */}
           <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -110,6 +130,50 @@ export default function Dashboard() {
               icon={AlertTriangle}
               variant="destructive"
             />
+          </motion.div>
+
+          {/* Stats Charts Section */}
+          <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Weekly Activity Bar Chart */}
+            <div className="bg-card rounded-xl p-6 shadow-sm">
+              <h2 className="font-bold text-lg mb-1">Weekly Activity</h2>
+              <p className="text-muted-foreground text-sm mb-4">Loans vs Returns this week</p>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={weeklyActivity}>
+                  <XAxis dataKey="day" tick={{ fill: '#64748b' }} />
+                  <YAxis tick={{ fill: '#64748b' }} />
+                  <Tooltip />
+                  <Legend verticalAlign="top" height={36} iconType="circle" />
+                  <Bar dataKey="Loans" fill="#22705e" radius={[4, 4, 0, 0]} barSize={32} />
+                  <Bar dataKey="Returns" fill="#fa7575" radius={[4, 4, 0, 0]} barSize={32} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {/* Category Distribution Donut Chart */}
+            <div className="bg-card rounded-xl p-6 shadow-sm flex flex-col items-center justify-center">
+              <h2 className="font-bold text-lg mb-1">Category Distribution</h2>
+              <p className="text-muted-foreground text-sm mb-4">Books by category</p>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    fill="#22705e"
+                    label={false}
+                  >
+                    {categoryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </motion.div>
 
           {/* Main Content Grid */}
