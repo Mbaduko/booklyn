@@ -72,10 +72,8 @@ export default function Login() {
             transition={{ duration: 0.5 }}
           >
             <div className="flex items-center gap-4 mb-8">
-              <div className="h-16 w-16 rounded-2xl bg-primary-foreground/20 backdrop-blur-sm flex items-center justify-center">
-                <BookOpen className="h-8 w-8" />
-              </div>
-              <span className="font-display font-bold text-3xl">LibraryHub</span>
+              <img src="/favicon.png" alt="Booklyn Logo" className="h-16 w-16 rounded-2xl shadow-lg object-cover bg-white/80" />
+              <span className="font-display font-bold text-3xl">BOOKLYN</span>
             </div>
             
             <h1 className="text-4xl font-display font-bold mb-4">
@@ -124,10 +122,8 @@ export default function Login() {
         >
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 justify-center mb-8">
-            <div className="h-12 w-12 rounded-xl gradient-primary flex items-center justify-center">
-              <BookOpen className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <span className="font-display font-bold text-2xl">LibraryHub</span>
+            <img src="/logo.png" alt="Booklyn Logo" className="h-12 w-12 rounded-xl shadow object-cover bg-white/80" />
+            <span className="font-display font-bold text-2xl">BOOKLYN</span>
           </div>
 
           <Card variant="elevated" className="border-0 shadow-lg">

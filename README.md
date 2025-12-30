@@ -1,7 +1,12 @@
+<p align="center">
+	<img src="public/logo.png" alt="Booklyn Logo" width="96" height="96" />
+</p>
 
+# BOOKLYN
 
-## Project info
+Modern library management system for seamless book tracking, borrowing, and user management.
 
+---
 
 
 ## How can I edit this code?
@@ -30,7 +35,7 @@ git clone <YOUR_GIT_URL>
 cd <YOUR_PROJECT_NAME>
 
 # Step 3: Install the necessary dependencies.
-npm i
+npm install
 
 # Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
@@ -50,24 +55,28 @@ npm run dev
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
-## What technologies are used for this project?
 
-This project is built with:
+## Tech Stack
 
 - Vite
 - TypeScript
 - React
-- shadcn-ui
+- shadcn/ui
 - Tailwind CSS
+
 
 ## How can I deploy this project?
 
+You can deploy Booklyn to any static hosting provider (Vercel, Netlify, etc.) or your own server.
 
+1. Build the project:
+	```sh
+	npm run build
+	```
+2. Deploy the contents of the `dist` folder to your hosting provider.
 
+---
 
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+© 2025 Booklyn. All rights reserved.
 
 

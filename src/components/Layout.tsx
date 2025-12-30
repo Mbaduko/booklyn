@@ -80,7 +80,7 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
             <Link to="/dashboard" className="flex items-center gap-3 group">
-              <img src="/logo.png" alt="Booklyn Logo" className="h-10 w-10 rounded-xl shadow-md group-hover:shadow-glow transition-shadow object-cover" />
+              <img src="/favicon.png" alt="Booklyn Logo" className="h-10 w-10 rounded-xl shadow-md group-hover:shadow-glow transition-shadow object-cover bg-white/80" />
               <span className="font-display font-bold text-xl hidden sm:block">
                 BOOKLYN
               </span>
