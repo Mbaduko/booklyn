@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '@/types/library';
+import { mockUsers as mockUsersList } from '@/mockdata'; // Adjust the import based on your file structure
 
 interface AuthContextType {
   user: User | null;
@@ -12,28 +13,11 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for demo
-const mockUsers: Record<string, User & { password: string }> = {
-  'librarian@library.com': {
-    id: '1',
-    email: 'librarian@library.com',
-    name: 'Sarah Mitchell',
-    role: 'librarian',
-    avatar: undefined,
-    createdAt: new Date('2023-01-15'),
-    isActive: true,
-    password: 'password123',
-  },
-  'client@library.com': {
-    id: '2',
-    email: 'client@library.com',
-    name: 'Alex Thompson',
-    role: 'client',
-    avatar: undefined,
-    createdAt: new Date('2023-06-20'),
-    isActive: true,
-    password: 'password123',
-  },
+// Passwords for demo users (not stored in mockUsers for easy removal later)
+const mockPasswords: Record<string, string> = {
+  'librarian@library.com': 'password123',
+  'client@library.com': 'password123',
+  'inactive@library.com': 'password123',
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -49,21 +33,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
+  // Replace login function to use mockUsersList and mockPasswords
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
-    
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 800));
-    
-    const mockUser = mockUsers[email.toLowerCase()];
-    if (mockUser && mockUser.password === password) {
-      const { password: _, ...userWithoutPassword } = mockUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem('library_user', JSON.stringify(userWithoutPassword));
+    const user = mockUsersList.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const correctPassword = mockPasswords[email.toLowerCase()];
+    if (user && correctPassword && password === correctPassword) {
+      setUser(user);
+      localStorage.setItem('library_user', JSON.stringify(user));
       setIsLoading(false);
       return true;
     }
-    
     setIsLoading(false);
     return false;
   };

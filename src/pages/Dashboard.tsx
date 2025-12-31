@@ -400,7 +400,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link to="/catalog">
               <Card variant="interactive" className="p-6 flex items-center gap-4 h-full">
-                <div className="h-12 w-12 rounded-xl gradient-primary flex items-center justify-center">
+                <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
                   <BookOpen className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <div>

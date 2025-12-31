@@ -28,9 +28,9 @@ const buttonVariants = cva(
         glass:
           "bg-card/80 backdrop-blur-md border border-border/50 text-foreground hover:bg-card hover:border-border active:scale-[0.98]",
         emerald:
-          "gradient-primary text-primary-foreground shadow-md hover:shadow-glow active:scale-[0.98]",
+          "bg-primary text-primary-foreground shadow-md hover:shadow-glow active:scale-[0.98]",
         coral:
-          "gradient-coral text-destructive-foreground shadow-md hover:shadow-lg active:scale-[0.98]",
+          "bg-destructive text-destructive-foreground shadow-md hover:shadow-lg active:scale-[0.98]",
       },
       size: {
         default: "h-10 px-4 py-2",

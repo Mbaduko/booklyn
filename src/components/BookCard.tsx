@@ -23,7 +23,7 @@ export function BookCard({ book, onBorrow, onEdit, showActions = true, isLibrari
       transition={{ duration: 0.3 }}
     >
       <Card variant="interactive" className="h-full overflow-hidden group">
-        <div className="relative h-48 bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center">
+        <div className="relative h-48 bg-muted flex items-center justify-center">
           <BookOpen className="h-16 w-16 text-primary/30 group-hover:scale-110 transition-transform duration-300" />
           <div className="absolute top-3 right-3">
             <Badge variant={isAvailable ? "available" : "unavailable"}>
