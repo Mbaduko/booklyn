@@ -42,6 +42,40 @@ export default function Books() {
 
   const isLibrarian = user?.role === 'librarian';
 
+  // Common book categories
+  const bookCategories = [
+    'Fiction',
+    'Non-Fiction',
+    'Science Fiction',
+    'Fantasy',
+    'Mystery',
+    'Thriller',
+    'Romance',
+    'Biography',
+    'History',
+    'Self-Help',
+    'Business',
+    'Technology',
+    'Programming',
+    'Science',
+    'Mathematics',
+    'Philosophy',
+    'Religion',
+    'Art',
+    'Music',
+    'Sports',
+    'Travel',
+    'Cooking',
+    'Health',
+    'Psychology',
+    'Education',
+    'Children',
+    'Young Adult',
+    'Poetry',
+    'Drama',
+    'Comics',
+  ];
+
   const categories = [...new Set(books.map(b => b.category))];
 
   const filteredBooks = books.filter(book => {
@@ -345,11 +379,18 @@ export default function Books() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
-                  <Input
-                    id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  />
+                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bookCategories.map(category => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="isbn">ISBN</Label>
@@ -469,11 +510,18 @@ export default function Books() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-category">Category</Label>
-                  <Input
-                    id="edit-category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  />
+                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bookCategories.map(category => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-copies">Total Copies</Label>
