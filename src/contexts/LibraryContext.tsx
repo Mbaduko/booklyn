@@ -3,6 +3,7 @@ import { Book, BorrowRecord, User, Notification, BorrowStatus } from '@/types/li
 import { addDays, isAfter, isBefore, differenceInDays, subDays } from 'date-fns';
 import { getUsers } from '@/api/users';
 import { getBooks } from '@/api/books';
+import { getBorrowRecords } from '@/api/borrows';
 
 interface LibraryContextType {
   books: Book[];
@@ -15,6 +16,9 @@ interface LibraryContextType {
   isLoadingBooks: boolean;
   booksError: string | null;
   refetchBooks: () => Promise<void>;
+  isLoadingBorrowRecords: boolean;
+  borrowRecordsError: string | null;
+  refetchBorrowRecords: () => Promise<void>;
   
   // Book operations
   addBook: (book: Omit<Book, 'id'>) => void;
@@ -48,46 +52,7 @@ const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
 
 // Users are now fetched from API instead of hardcoded data
 
-const initialBorrowRecords: BorrowRecord[] = [
-  {
-    id: 'b1',
-    bookId: '1',
-    userId: '2',
-    status: 'borrowed',
-    reservedAt: subDays(new Date(), 10),
-    reservationExpiresAt: subDays(new Date(), 9),
-    pickupDate: subDays(new Date(), 9),
-    dueDate: addDays(new Date(), 5),
-  },
-  {
-    id: 'b2',
-    bookId: '3',
-    userId: '2',
-    status: 'overdue',
-    reservedAt: subDays(new Date(), 20),
-    reservationExpiresAt: subDays(new Date(), 19),
-    pickupDate: subDays(new Date(), 19),
-    dueDate: subDays(new Date(), 5),
-  },
-  {
-    id: 'b3',
-    bookId: '5',
-    userId: '3',
-    status: 'reserved',
-    reservedAt: new Date(),
-    reservationExpiresAt: addDays(new Date(), 2),
-  },
-  {
-    id: 'b4',
-    bookId: '2',
-    userId: '4',
-    status: 'borrowed',
-    reservedAt: subDays(new Date(), 5),
-    reservationExpiresAt: subDays(new Date(), 4),
-    pickupDate: subDays(new Date(), 4),
-    dueDate: addDays(new Date(), 2),
-  },
-];
+// Borrow records are now fetched from API instead of hardcoded data
 
 const initialNotifications: Notification[] = [
   {
@@ -126,7 +91,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [usersError, setUsersError] = useState<string | null>(null);
-  const [borrowRecords, setBorrowRecords] = useState<BorrowRecord[]>(initialBorrowRecords);
+  const [borrowRecords, setBorrowRecords] = useState<BorrowRecord[]>([]);
+  const [isLoadingBorrowRecords, setIsLoadingBorrowRecords] = useState(true);
+  const [borrowRecordsError, setBorrowRecordsError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
 
   // Function to fetch users from API
@@ -173,10 +140,33 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Function to fetch borrow records from API
+  const refetchBorrowRecords = async () => {
+    // Check if token exists before attempting to fetch
+    const token = localStorage.getItem('library_token');
+    if (!token) {
+      setIsLoadingBorrowRecords(false);
+      return;
+    }
+
+    try {
+      setIsLoadingBorrowRecords(true);
+      setBorrowRecordsError(null);
+      const fetchedBorrowRecords = await getBorrowRecords();
+      setBorrowRecords(fetchedBorrowRecords);
+    } catch (error) {
+      console.error('Failed to fetch borrow records:', error);
+      setBorrowRecordsError(error instanceof Error ? error.message : 'Failed to fetch borrow records');
+    } finally {
+      setIsLoadingBorrowRecords(false);
+    }
+  };
+
   // Fetch users on mount if token exists
   useEffect(() => {
     refetchUsers();
     refetchBooks();
+    refetchBorrowRecords();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Listen for login events to refetch users
@@ -184,6 +174,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     const handleLogin = () => {
       refetchUsers();
       refetchBooks();
+      refetchBorrowRecords();
     };
 
     window.addEventListener('user-logged-in', handleLogin);
@@ -322,6 +313,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         isLoadingBooks,
         booksError,
         refetchBooks,
+        isLoadingBorrowRecords,
+        borrowRecordsError,
+        refetchBorrowRecords,
         addBook,
         updateBook,
         deleteBook,

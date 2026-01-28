@@ -1,4 +1,4 @@
-import { BorrowRecord, Notification } from '@/types/library';
+import { Notification } from '@/types/library';
 
 // Books are now fetched from the real API (src/api/books.ts)
 /*
@@ -7,37 +7,12 @@ export const mockBooks: Book[] = [
 ];
 */
 
+// Borrow records are now fetched from the real API (src/api/borrows.ts)
+/*
 export const mockBorrowRecords: BorrowRecord[] = [
-  {
-    id: 'r1',
-    bookId: 'b1',
-    userId: '2',
-    status: 'borrowed',
-    reservedAt: new Date('2023-12-20'),
-    reservationExpiresAt: new Date('2023-12-22'),
-    pickupDate: new Date('2023-12-21'),
-    dueDate: new Date('2023-12-28'),
-  },
-  {
-    id: 'r2',
-    bookId: 'b2',
-    userId: '2',
-    status: 'reserved',
-    reservedAt: new Date('2023-12-25'),
-    reservationExpiresAt: new Date('2023-12-27'),
-  },
-  {
-    id: 'r3',
-    bookId: 'b4',
-    userId: '3',
-    status: 'overdue',
-    reservedAt: new Date('2023-12-10'),
-    reservationExpiresAt: new Date('2023-12-12'),
-    pickupDate: new Date('2023-12-11'),
-    dueDate: new Date('2023-12-18'),
-    overduesDays: 12,
-  },
+  ...
 ];
+*/
 
 export const mockNotifications: Notification[] = [
   {
