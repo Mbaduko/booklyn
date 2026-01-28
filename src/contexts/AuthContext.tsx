@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '@/types/library';
-import { mockUsers as mockUsersList } from '@/mockdata'; // Adjust the import based on your file structure
+
+import { login as apiLogin, AuthResponse } from '@/api/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -13,12 +14,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Passwords for demo users (not stored in mockUsers for easy removal later)
-const mockPasswords: Record<string, string> = {
-  'librarian@library.com': 'password123',
-  'client@library.com': 'password123',
-  'inactive@library.com': 'password123',
-};
+
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -27,32 +23,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check for saved session
     const savedUser = localStorage.getItem('library_user');
+    const savedToken = localStorage.getItem('library_token');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
+    // Token is available for API calls via localStorage
     setIsLoading(false);
   }, []);
 
-  // Replace login function to use mockUsersList and mockPasswords
+  // Login using real API
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    const user = mockUsersList.find(u => u.email.toLowerCase() === email.toLowerCase());
-    const correctPassword = mockPasswords[email.toLowerCase()];
-    if (user && correctPassword && password === correctPassword) {
-      setUser(user);
-      localStorage.setItem('library_user', JSON.stringify(user));
+    try {
+      const response: AuthResponse = await apiLogin({ email, password });
+      setUser(response.user);
+      localStorage.setItem('library_user', JSON.stringify(response.user));
+      localStorage.setItem('library_token', response.token);
+      
+      // Dispatch event to trigger data refetch in other contexts
+      window.dispatchEvent(new Event('user-logged-in'));
+      
       setIsLoading(false);
       return true;
+    } catch (error) {
+      setIsLoading(false);
+      return false;
     }
-    setIsLoading(false);
-    return false;
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('library_user');
+    localStorage.removeItem('library_token');
   };
 
   const switchRole = (role: UserRole) => {

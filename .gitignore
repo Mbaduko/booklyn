@@ -24,3 +24,4 @@ dist-ssr
 *.sw?
 src/**/*.md
 ./API_DOCS.md
+.env

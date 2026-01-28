@@ -1,12 +1,16 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Book, BorrowRecord, User, Notification, BorrowStatus } from '@/types/library';
 import { addDays, isAfter, isBefore, differenceInDays, subDays } from 'date-fns';
+import { getUsers } from '@/api/users';
 
 interface LibraryContextType {
   books: Book[];
   users: User[];
   borrowRecords: BorrowRecord[];
   notifications: Notification[];
+  isLoadingUsers: boolean;
+  usersError: string | null;
+  refetchUsers: () => Promise<void>;
   
   // Book operations
   addBook: (book: Omit<Book, 'id'>) => void;
@@ -127,40 +131,7 @@ const initialBooks: Book[] = [
   },
 ];
 
-const initialUsers: User[] = [
-  {
-    id: '2',
-    email: 'client@library.com',
-    name: 'Alex Thompson',
-    role: 'client',
-    createdAt: new Date('2023-06-20'),
-    isActive: true,
-  },
-  {
-    id: '3',
-    email: 'emma@email.com',
-    name: 'Emma Wilson',
-    role: 'client',
-    createdAt: new Date('2023-08-10'),
-    isActive: true,
-  },
-  {
-    id: '4',
-    email: 'james@email.com',
-    name: 'James Chen',
-    role: 'client',
-    createdAt: new Date('2023-09-05'),
-    isActive: true,
-  },
-  {
-    id: '5',
-    email: 'olivia@email.com',
-    name: 'Olivia Martinez',
-    role: 'client',
-    createdAt: new Date('2024-01-12'),
-    isActive: false,
-  },
-];
+// Users are now fetched from API instead of hardcoded data
 
 const initialBorrowRecords: BorrowRecord[] = [
   {
@@ -235,9 +206,48 @@ const initialNotifications: Notification[] = [
 
 export function LibraryProvider({ children }: { children: ReactNode }) {
   const [books, setBooks] = useState<Book[]>(initialBooks);
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [usersError, setUsersError] = useState<string | null>(null);
   const [borrowRecords, setBorrowRecords] = useState<BorrowRecord[]>(initialBorrowRecords);
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+
+  // Function to fetch users from API
+  const refetchUsers = async () => {
+    // Check if token exists before attempting to fetch
+    const token = localStorage.getItem('library_token');
+    if (!token) {
+      setIsLoadingUsers(false);
+      return;
+    }
+
+    try {
+      setIsLoadingUsers(true);
+      setUsersError(null);
+      const fetchedUsers = await getUsers();
+      setUsers(fetchedUsers);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      setUsersError(error instanceof Error ? error.message : 'Failed to fetch users');
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  // Fetch users on mount if token exists
+  useEffect(() => {
+    refetchUsers();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Listen for login events to refetch users
+  useEffect(() => {
+    const handleLogin = () => {
+      refetchUsers();
+    };
+
+    window.addEventListener('user-logged-in', handleLogin);
+    return () => window.removeEventListener('user-logged-in', handleLogin);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -365,6 +375,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         users,
         borrowRecords,
         notifications,
+        isLoadingUsers,
+        usersError,
+        refetchUsers,
         addBook,
         updateBook,
         deleteBook,

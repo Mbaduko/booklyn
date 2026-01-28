@@ -1,31 +1,4 @@
-import { User, Book, BorrowRecord, Notification } from '@/types/library';
-
-export const mockUsers: User[] = [
-  {
-    id: '1',
-    email: 'librarian@library.com',
-    name: 'Sarah Manager',
-    role: 'librarian',
-    createdAt: new Date('2023-01-01'),
-    isActive: true,
-  },
-  {
-    id: '2',
-    email: 'client@library.com',
-    name: 'John Reader',
-    role: 'client',
-    createdAt: new Date('2023-02-01'),
-    isActive: true,
-  },
-  {
-    id: '3',
-    email: 'inactive@library.com',
-    name: 'Inactive User',
-    role: 'client',
-    createdAt: new Date('2023-03-01'),
-    isActive: false,
-  },
-];
+import { Book, BorrowRecord, Notification } from '@/types/library';
 
 export const mockBooks: Book[] = [
   {

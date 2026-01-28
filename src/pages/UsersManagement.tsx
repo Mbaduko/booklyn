@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,7 +38,7 @@ import { motion } from 'framer-motion';
 import { User, UserRole } from '@/types/library';
 
 export default function UsersManagement() {
-  const { users, addUser, updateUser, deleteUser, borrowRecords, getBorrowStatus, getBookById } = useLibrary();
+  const { users, addUser, updateUser, deleteUser, borrowRecords, getBorrowStatus, getBookById, refetchUsers } = useLibrary();
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -90,6 +90,11 @@ export default function UsersManagement() {
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
+
+  // Refetch users when component mounts to ensure fresh data
+  useEffect(() => {
+    refetchUsers();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Layout>
