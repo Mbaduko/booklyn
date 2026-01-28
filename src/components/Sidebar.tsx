@@ -1,17 +1,27 @@
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { LayoutDashboard, Library, Users, BookOpen, History, BarChart3 } from "lucide-react";
 
-const navItems = [
+const librarianNavItems = [
   { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={18} /> },
   { name: "Books", path: "/books", icon: <Library size={18} /> },
   { name: "Users", path: "/users", icon: <Users size={18} /> },
   { name: "Borrowing", path: "/borrows", icon: <BookOpen size={18} /> },
   { name: "Reports", path: "/reports", icon: <BarChart3 size={18} /> },
+];
+
+const clientNavItems = [
+  { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={18} /> },
+  { name: "Browse Books", path: "/catalog", icon: <Library size={18} /> },
+  { name: "My Books", path: "/my-books", icon: <BookOpen size={18} /> },
   { name: "History", path: "/history", icon: <History size={18} /> },
 ];
 
 export default function Sidebar() {
+  const { user } = useAuth();
   const location = useLocation();
+  
+  const navItems = user?.role === 'librarian' ? librarianNavItems : clientNavItems;
 
   return (
     <aside className="w-64 bg-white border-r h-screen flex flex-col fixed left-0 top-0 z-40 select-none">
