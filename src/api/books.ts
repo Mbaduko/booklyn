@@ -10,7 +10,6 @@ function getAuthToken(): string | null {
 function getAuthHeaders(): HeadersInit {
   const token = getAuthToken();
   return {
-    'Content-Type': 'application/json',
     'Accept': 'application/json',
     ...(token && { 'Authorization': `Bearer ${token}` }),
   };
@@ -39,6 +38,46 @@ export async function getBook(id: string): Promise<Book> {
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
     throw new Error(error.message || 'Failed to fetch book');
+  }
+
+  return res.json();
+}
+
+export async function createBook(formData: FormData): Promise<Book> {
+  const res = await fetch(`${API_BASE_URL}/books`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: formData,
+  });
+
+  if (!res.ok) {
+    let error;
+    try {
+      error = await res.json();
+    } catch {
+      error = {};
+    }
+    throw new Error(error.error || error.message || 'Failed to create book');
+  }
+
+  return res.json();
+}
+
+export async function updateBook(id: string, formData: FormData): Promise<Book> {
+  const res = await fetch(`${API_BASE_URL}/books/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: formData,
+  });
+
+  if (!res.ok) {
+    let error;
+    try {
+      error = await res.json();
+    } catch {
+      error = {};
+    }
+    throw new Error(error.error || error.message || 'Failed to update book');
   }
 
   return res.json();

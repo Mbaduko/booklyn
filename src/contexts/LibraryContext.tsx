@@ -25,22 +25,17 @@ interface LibraryContextType {
   notificationsError: string | null;
   refetchNotifications: (userId?: string) => Promise<void>;
   
-  // Book operations
-  addBook: (book: Omit<Book, 'id'>) => void;
-  updateBook: (id: string, updates: Partial<Book>) => void;
-  deleteBook: (id: string) => void;
-  
-  // User operations
+  // User operations (still using mock for now)
   addUser: (user: Omit<User, 'id' | 'createdAt'>) => void;
   updateUser: (id: string, updates: Partial<User>) => void;
   deleteUser: (id: string) => void;
   
-  // Borrow operations
+  // Borrow operations (still using mock for now)
   reserveBook: (bookId: string, userId: string) => void;
   confirmPickup: (recordId: string, loanDurationDays?: number) => void;
   confirmReturn: (recordId: string) => void;
   
-  // Notification operations
+  // Notification operations (still using mock for now)
   markNotificationRead: (id: string) => void;
   
   // Helpers
@@ -195,20 +190,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
-  // Book operations
-  const addBook = (book: Omit<Book, 'id'>) => {
-    setBooks(prev => [...prev, { ...book, id: generateId() }]);
-  };
-
-  const updateBook = (id: string, updates: Partial<Book>) => {
-    setBooks(prev => prev.map(book => book.id === id ? { ...book, ...updates } : book));
-  };
-
-  const deleteBook = (id: string) => {
-    setBooks(prev => prev.filter(book => book.id !== id));
-  };
-
-  // User operations
+  // User operations (still using mock for now)
   const addUser = (user: Omit<User, 'id' | 'createdAt'>) => {
     setUsers(prev => [...prev, { ...user, id: generateId(), createdAt: new Date() }]);
   };
@@ -236,7 +218,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     };
 
     setBorrowRecords(prev => [...prev, newRecord]);
-    updateBook(bookId, { availableCopies: book.availableCopies - 1 });
+    // Note: updateBook is no longer available since we use real API
+    // This would need to be handled by the API when implementing real borrow operations
 
     // Add notification
     const newNotification: Notification = {
@@ -270,10 +253,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     const record = borrowRecords.find(r => r.id === recordId);
     if (!record) return;
 
-    const book = books.find(b => b.id === record.bookId);
-    if (book) {
-      updateBook(book.id, { availableCopies: book.availableCopies + 1 });
-    }
+    // Note: updateBook is no longer available since we use real API
+    // This would need to be handled by the API when implementing real borrow operations
 
     setBorrowRecords(prev =>
       prev.map(r =>
@@ -331,9 +312,6 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         isLoadingNotifications,
         notificationsError,
         refetchNotifications,
-        addBook,
-        updateBook,
-        deleteBook,
         addUser,
         updateUser,
         deleteUser,

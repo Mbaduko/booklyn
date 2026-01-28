@@ -23,20 +23,22 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, Plus, Filter, BookOpen } from 'lucide-react';
+import { Search, Plus, Filter, BookOpen, Upload, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { Book } from '@/types/library';
+import { createBook, updateBook } from '@/api/books';
 
 export default function Books() {
   const { user } = useAuth();
-  const { books, addBook, updateBook, deleteBook, reserveBook } = useLibrary();
+  const { books, refetchBooks, reserveBook } = useLibrary();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [isBorrowDialogOpen, setIsBorrowDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const isLibrarian = user?.role === 'librarian';
 
@@ -61,12 +63,91 @@ export default function Books() {
     publishedYear: new Date().getFullYear(),
   });
 
-  const handleAddBook = () => {
-    addBook({
-      ...formData,
-      availableCopies: formData.totalCopies,
-    });
-    setIsAddDialogOpen(false);
+  const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string>('');
+
+  const handleAddBook = async () => {
+    if (!isLibrarian) return;
+    
+    try {
+      setIsLoading(true);
+      
+      const formDataToSend = new FormData();
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('author', formData.author);
+      formDataToSend.append('category', formData.category);
+      formDataToSend.append('isbn', formData.isbn);
+      formDataToSend.append('totalCopies', formData.totalCopies.toString());
+      formDataToSend.append('publishedYear', formData.publishedYear.toString());
+      formDataToSend.append('description', formData.description);
+      
+      if (coverImage) {
+        formDataToSend.append('coverImage', coverImage);
+      }
+
+      await createBook(formDataToSend);
+      
+      await refetchBooks();
+      setIsAddDialogOpen(false);
+      resetForm();
+      toast({
+        title: 'Book added',
+        description: `${formData.title} has been added to the catalog.`,
+      });
+    } catch (error) {
+      console.error('Failed to add book:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to add book',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditBook = async () => {
+    if (!isLibrarian || !selectedBook) return;
+    
+    try {
+      setIsLoading(true);
+      
+      const formDataToSend = new FormData();
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('author', formData.author);
+      formDataToSend.append('category', formData.category);
+      formDataToSend.append('isbn', formData.isbn);
+      formDataToSend.append('totalCopies', formData.totalCopies.toString());
+      formDataToSend.append('publishedYear', formData.publishedYear.toString());
+      formDataToSend.append('description', formData.description);
+      
+      if (coverImage) {
+        formDataToSend.append('coverImage', coverImage);
+      }
+
+      await updateBook(selectedBook.id, formDataToSend);
+      
+      await refetchBooks();
+      setIsEditDialogOpen(false);
+      setSelectedBook(null);
+      resetForm();
+      toast({
+        title: 'Book updated',
+        description: `${formData.title} has been updated.`,
+      });
+    } catch (error) {
+      console.error('Failed to update book:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update book',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetForm = () => {
     setFormData({
       title: '',
       author: '',
@@ -76,22 +157,43 @@ export default function Books() {
       description: '',
       publishedYear: new Date().getFullYear(),
     });
-    toast({
-      title: 'Book added',
-      description: `${formData.title} has been added to the catalog.`,
-    });
+    setCoverImage(null);
+    setCoverImagePreview('');
   };
 
-  const handleEditBook = () => {
-    if (selectedBook) {
-      updateBook(selectedBook.id, formData);
-      setIsEditDialogOpen(false);
-      setSelectedBook(null);
-      toast({
-        title: 'Book updated',
-        description: `${formData.title} has been updated.`,
-      });
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'Error',
+          description: 'Image size must be less than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'Error',
+          description: 'Please select an image file',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setCoverImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
+  };
+
+  const removeCoverImage = () => {
+    setCoverImage(null);
+    setCoverImagePreview('');
   };
 
   const openEditDialog = (book: Book) => {
@@ -105,6 +207,7 @@ export default function Books() {
       description: book.description || '',
       publishedYear: book.publishedYear || new Date().getFullYear(),
     });
+    setCoverImagePreview(book.coverImage || '');
     setIsEditDialogOpen(true);
   };
 
@@ -286,13 +389,52 @@ export default function Books() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="coverImage">Cover Image (Optional)</Label>
+                <div className="flex items-center gap-4">
+                  {coverImagePreview ? (
+                    <div className="relative">
+                      <img 
+                        src={coverImagePreview} 
+                        alt="Cover preview" 
+                        className="h-20 w-16 object-cover rounded"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                        onClick={removeCoverImage}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="h-20 w-16 border-2 border-dashed border-muted-foreground/25 rounded flex items-center justify-center">
+                      <Upload className="h-6 w-6 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <Input
+                      id="coverImage"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="cursor-pointer"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      JPG, PNG, WebP (max 5MB)
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="emerald" onClick={handleAddBook}>
-                Add Book
+              <Button variant="emerald" onClick={handleAddBook} disabled={isLoading}>
+                {isLoading ? 'Adding...' : 'Add Book'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -352,25 +494,52 @@ export default function Books() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-coverImage">Cover Image (Optional)</Label>
+                <div className="flex items-center gap-4">
+                  {coverImagePreview ? (
+                    <div className="relative">
+                      <img 
+                        src={coverImagePreview} 
+                        alt="Cover preview" 
+                        className="h-20 w-16 object-cover rounded"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                        onClick={removeCoverImage}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="h-20 w-16 border-2 border-dashed border-muted-foreground/25 rounded flex items-center justify-center">
+                      <Upload className="h-6 w-6 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <Input
+                      id="edit-coverImage"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="cursor-pointer"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      JPG, PNG, WebP (max 5MB)
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
             <DialogFooter className="flex gap-2">
-              <Button 
-                variant="destructive" 
-                onClick={() => {
-                  if (selectedBook) {
-                    deleteBook(selectedBook.id);
-                    setIsEditDialogOpen(false);
-                    toast({ title: 'Book deleted' });
-                  }
-                }}
-              >
-                Delete
-              </Button>
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="emerald" onClick={handleEditBook}>
-                Save Changes
+              <Button variant="emerald" onClick={handleEditBook} disabled={isLoading}>
+                {isLoading ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>
           </DialogContent>
