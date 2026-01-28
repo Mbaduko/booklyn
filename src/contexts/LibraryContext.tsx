@@ -4,6 +4,8 @@ import { addDays, isAfter, isBefore, differenceInDays, subDays } from 'date-fns'
 import { getUsers } from '@/api/users';
 import { getBooks } from '@/api/books';
 import { getBorrowRecords } from '@/api/borrows';
+import { getNotifications } from '@/api/notifications';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LibraryContextType {
   books: Book[];
@@ -19,6 +21,9 @@ interface LibraryContextType {
   isLoadingBorrowRecords: boolean;
   borrowRecordsError: string | null;
   refetchBorrowRecords: () => Promise<void>;
+  isLoadingNotifications: boolean;
+  notificationsError: string | null;
+  refetchNotifications: (userId?: string) => Promise<void>;
   
   // Book operations
   addBook: (book: Omit<Book, 'id'>) => void;
@@ -54,37 +59,10 @@ const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
 
 // Borrow records are now fetched from API instead of hardcoded data
 
-const initialNotifications: Notification[] = [
-  {
-    id: 'n1',
-    userId: '2',
-    title: 'Book Due Soon',
-    message: 'The Great Gatsby is due in 5 days. Please return it on time.',
-    type: 'warning',
-    read: false,
-    createdAt: new Date(),
-  },
-  {
-    id: 'n2',
-    userId: '2',
-    title: 'Overdue Book',
-    message: 'Clean Code is 5 days overdue. Please return it as soon as possible.',
-    type: 'error',
-    read: false,
-    createdAt: subDays(new Date(), 1),
-  },
-  {
-    id: 'n3',
-    userId: '1',
-    title: 'Pending Pickup',
-    message: 'Emma Wilson has a book waiting for pickup.',
-    type: 'info',
-    read: false,
-    createdAt: new Date(),
-  },
-];
+// Notifications are now fetched from API instead of hardcoded data
 
 export function LibraryProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [books, setBooks] = useState<Book[]>([]);
   const [isLoadingBooks, setIsLoadingBooks] = useState(true);
   const [booksError, setBooksError] = useState<string | null>(null);
@@ -94,7 +72,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const [borrowRecords, setBorrowRecords] = useState<BorrowRecord[]>([]);
   const [isLoadingBorrowRecords, setIsLoadingBorrowRecords] = useState(true);
   const [borrowRecordsError, setBorrowRecordsError] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
 
   // Function to fetch users from API
   const refetchUsers = async () => {
@@ -162,6 +142,30 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Function to fetch notifications from API
+  const refetchNotifications = async (userId?: string) => {
+    // Check if token exists before attempting to fetch
+    const token = localStorage.getItem('library_token');
+    if (!token) {
+      setIsLoadingNotifications(false);
+      return;
+    }
+
+    try {
+      setIsLoadingNotifications(true);
+      setNotificationsError(null);
+      // Use provided userId or default to empty string (API will handle validation)
+      const targetUserId = userId || '';
+      const fetchedNotifications = await getNotifications(targetUserId);
+      setNotifications(fetchedNotifications);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+      setNotificationsError(error instanceof Error ? error.message : 'Failed to fetch notifications');
+    } finally {
+      setIsLoadingNotifications(false);
+    }
+  };
+
   // Fetch users on mount if token exists
   useEffect(() => {
     refetchUsers();
@@ -169,12 +173,20 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     refetchBorrowRecords();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Listen for login events to refetch users
+  // Fetch notifications when user is available
+  useEffect(() => {
+    if (user) {
+      refetchNotifications(user.id);
+    }
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Listen for login events to refetch data
   useEffect(() => {
     const handleLogin = () => {
       refetchUsers();
       refetchBooks();
       refetchBorrowRecords();
+      // Notifications will be fetched automatically when user is set in AuthContext
     };
 
     window.addEventListener('user-logged-in', handleLogin);
@@ -316,6 +328,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         isLoadingBorrowRecords,
         borrowRecordsError,
         refetchBorrowRecords,
+        isLoadingNotifications,
+        notificationsError,
+        refetchNotifications,
         addBook,
         updateBook,
         deleteBook,
