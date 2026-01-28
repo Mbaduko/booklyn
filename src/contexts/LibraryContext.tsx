@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Book, BorrowRecord, User, Notification, BorrowStatus } from '@/types/library';
 import { addDays, isAfter, isBefore, differenceInDays, subDays } from 'date-fns';
 import { getUsers } from '@/api/users';
+import { getBooks } from '@/api/books';
 
 interface LibraryContextType {
   books: Book[];
@@ -11,6 +12,9 @@ interface LibraryContextType {
   isLoadingUsers: boolean;
   usersError: string | null;
   refetchUsers: () => Promise<void>;
+  isLoadingBooks: boolean;
+  booksError: string | null;
+  refetchBooks: () => Promise<void>;
   
   // Book operations
   addBook: (book: Omit<Book, 'id'>) => void;
@@ -40,96 +44,7 @@ interface LibraryContextType {
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
 
 // Mock initial data
-const initialBooks: Book[] = [
-  {
-    id: '1',
-    title: 'The Great Gatsby',
-    author: 'F. Scott Fitzgerald',
-    category: 'Classic Literature',
-    isbn: '978-0-7432-7356-5',
-    totalCopies: 5,
-    availableCopies: 3,
-    description: 'A story of decadence and excess, Gatsby explores the American Dream.',
-    publishedYear: 1925,
-  },
-  {
-    id: '2',
-    title: 'To Kill a Mockingbird',
-    author: 'Harper Lee',
-    category: 'Classic Literature',
-    isbn: '978-0-06-112008-4',
-    totalCopies: 4,
-    availableCopies: 2,
-    description: 'The unforgettable novel of a childhood in a sleepy Southern town.',
-    publishedYear: 1960,
-  },
-  {
-    id: '3',
-    title: 'Clean Code',
-    author: 'Robert C. Martin',
-    category: 'Technology',
-    isbn: '978-0-13-235088-4',
-    totalCopies: 3,
-    availableCopies: 1,
-    description: 'A handbook of agile software craftsmanship.',
-    publishedYear: 2008,
-  },
-  {
-    id: '4',
-    title: 'Atomic Habits',
-    author: 'James Clear',
-    category: 'Self-Help',
-    isbn: '978-0-7352-1129-2',
-    totalCopies: 6,
-    availableCopies: 4,
-    description: 'An easy & proven way to build good habits & break bad ones.',
-    publishedYear: 2018,
-  },
-  {
-    id: '5',
-    title: 'The Midnight Library',
-    author: 'Matt Haig',
-    category: 'Fiction',
-    isbn: '978-0-525-55947-4',
-    totalCopies: 4,
-    availableCopies: 0,
-    description: 'Between life and death there is a library.',
-    publishedYear: 2020,
-  },
-  {
-    id: '6',
-    title: 'Sapiens',
-    author: 'Yuval Noah Harari',
-    category: 'Non-Fiction',
-    isbn: '978-0-06-231609-7',
-    totalCopies: 5,
-    availableCopies: 3,
-    description: 'A brief history of humankind.',
-    publishedYear: 2011,
-  },
-  {
-    id: '7',
-    title: 'The Psychology of Money',
-    author: 'Morgan Housel',
-    category: 'Finance',
-    isbn: '978-0-85719-768-0',
-    totalCopies: 4,
-    availableCopies: 2,
-    description: 'Timeless lessons on wealth, greed, and happiness.',
-    publishedYear: 2020,
-  },
-  {
-    id: '8',
-    title: 'Dune',
-    author: 'Frank Herbert',
-    category: 'Science Fiction',
-    isbn: '978-0-441-17271-9',
-    totalCopies: 3,
-    availableCopies: 1,
-    description: 'Set on the desert planet Arrakis, Dune is the story of the boy Paul Atreides.',
-    publishedYear: 1965,
-  },
-];
+// Books are now fetched from API instead of hardcoded data
 
 // Users are now fetched from API instead of hardcoded data
 
@@ -205,7 +120,9 @@ const initialNotifications: Notification[] = [
 ];
 
 export function LibraryProvider({ children }: { children: ReactNode }) {
-  const [books, setBooks] = useState<Book[]>(initialBooks);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [isLoadingBooks, setIsLoadingBooks] = useState(true);
+  const [booksError, setBooksError] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [usersError, setUsersError] = useState<string | null>(null);
@@ -234,15 +151,39 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Function to fetch books from API
+  const refetchBooks = async () => {
+    // Check if token exists before attempting to fetch
+    const token = localStorage.getItem('library_token');
+    if (!token) {
+      setIsLoadingBooks(false);
+      return;
+    }
+
+    try {
+      setIsLoadingBooks(true);
+      setBooksError(null);
+      const fetchedBooks = await getBooks();
+      setBooks(fetchedBooks);
+    } catch (error) {
+      console.error('Failed to fetch books:', error);
+      setBooksError(error instanceof Error ? error.message : 'Failed to fetch books');
+    } finally {
+      setIsLoadingBooks(false);
+    }
+  };
+
   // Fetch users on mount if token exists
   useEffect(() => {
     refetchUsers();
+    refetchBooks();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Listen for login events to refetch users
   useEffect(() => {
     const handleLogin = () => {
       refetchUsers();
+      refetchBooks();
     };
 
     window.addEventListener('user-logged-in', handleLogin);
@@ -378,6 +319,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         isLoadingUsers,
         usersError,
         refetchUsers,
+        isLoadingBooks,
+        booksError,
+        refetchBooks,
         addBook,
         updateBook,
         deleteBook,

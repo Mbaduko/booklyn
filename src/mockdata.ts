@@ -1,51 +1,11 @@
-import { Book, BorrowRecord, Notification } from '@/types/library';
+import { BorrowRecord, Notification } from '@/types/library';
 
+// Books are now fetched from the real API (src/api/books.ts)
+/*
 export const mockBooks: Book[] = [
-  {
-    id: 'b1',
-    title: 'The Great Gatsby',
-    author: 'F. Scott Fitzgerald',
-    category: 'Fiction',
-    isbn: '9780743273565',
-    totalCopies: 5,
-    availableCopies: 2,
-    publishedYear: 1925,
-    description: 'A classic novel set in the Roaring Twenties.'
-  },
-  {
-    id: 'b2',
-    title: 'A Brief History of Time',
-    author: 'Stephen Hawking',
-    category: 'Science',
-    isbn: '9780553380163',
-    totalCopies: 3,
-    availableCopies: 1,
-    publishedYear: 1988,
-    description: 'A popular-science book on cosmology.'
-  },
-  {
-    id: 'b3',
-    title: 'Sapiens',
-    author: 'Yuval Noah Harari',
-    category: 'Non-Fiction',
-    isbn: '9780062316097',
-    totalCopies: 4,
-    availableCopies: 4,
-    publishedYear: 2011,
-    description: 'A brief history of humankind.'
-  },
-  {
-    id: 'b4',
-    title: 'World History',
-    author: 'Jane Smith',
-    category: 'History',
-    isbn: '9781234567890',
-    totalCopies: 2,
-    availableCopies: 0,
-    publishedYear: 2000,
-    description: 'A comprehensive history book.'
-  },
+  ...
 ];
+*/
 
 export const mockBorrowRecords: BorrowRecord[] = [
   {

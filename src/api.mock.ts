@@ -1,19 +1,12 @@
-import { mockBooks, mockBorrowRecords, mockNotifications } from '@/mockdata';
-import { Book, BorrowRecord, Notification } from '@/types/library';
+import { mockBorrowRecords, mockNotifications } from '@/mockdata';
+import { BorrowRecord, Notification } from '@/types/library';
 
 // Simulate network delay
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 export const api = {
   // User endpoints removed - now using real API in src/api/users.ts
-  async getBooks(): Promise<Book[]> {
-    await delay(300);
-    return mockBooks;
-  },
-  async getBook(id: string): Promise<Book | undefined> {
-    await delay(200);
-    return mockBooks.find(b => b.id === id);
-  },
+  // Book endpoints removed - now using real API in src/api/books.ts
   async getBorrowRecords(): Promise<BorrowRecord[]> {
     await delay(300);
     return mockBorrowRecords;
