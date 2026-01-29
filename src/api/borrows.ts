@@ -112,6 +112,33 @@ export async function confirmPickup(borrowId: string): Promise<BorrowRecord> {
   return convertAPIToFrontend(data);
 }
 
+export async function confirmReturn(borrowId: string): Promise<BorrowRecord> {
+  const res = await fetch(`${API_BASE_URL}/borrows/${borrowId}/return`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    let error;
+    try {
+      error = await res.json();
+    } catch {
+      error = {};
+    }
+    throw new Error(error.error || error.message || 'Failed to confirm book return');
+  }
+
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error('Failed to parse response data');
+  }
+  
+  // Convert API response to frontend types
+  return convertAPIToFrontend(data);
+}
+
 export async function getBorrowRecord(id: string): Promise<BorrowRecord> {
   const res = await fetch(`${API_BASE_URL}/borrows/${id}`, {
     method: 'GET',

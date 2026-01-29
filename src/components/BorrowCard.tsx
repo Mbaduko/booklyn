@@ -150,8 +150,15 @@ export function BorrowCard({
                     </Button>
                   )}
                   {(status === 'borrowed' || status === 'due_soon' || status === 'overdue') && isLibrarian && (
-                    <Button size="sm" variant="success" onClick={onConfirmReturn}>
-                      Confirm Return
+                    <Button size="sm" variant="success" onClick={onConfirmReturn} disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                          Returning...
+                        </>
+                      ) : (
+                        'Confirm Return'
+                      )}
                     </Button>
                   )}
                 </div>

@@ -74,6 +74,26 @@ export default function Dashboard() {
     }
   };
 
+  const handleConfirmReturn = async (recordId: string) => {
+    setLoadingId(recordId);
+    try {
+      await confirmReturn(recordId);
+      toast({
+        title: 'Return Confirmed',
+        description: 'Book return has been confirmed successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to confirm return:', error);
+      toast({
+        title: 'Return Failed',
+        description: error instanceof Error ? error.message : 'Failed to confirm book return',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -284,8 +304,20 @@ export default function Dashboard() {
                             <p className="font-medium text-sm">{book.title}</p>
                             <p className="text-xs text-muted-foreground">{borrower?.name}</p>
                           </div>
-                          <Button size="sm" variant="outline" onClick={() => confirmReturn(record.id)}>
-                            Return
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => handleConfirmReturn(record.id)}
+                            disabled={loadingId === record.id}
+                          >
+                            {loadingId === record.id ? (
+                              <>
+                                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                Returning...
+                              </>
+                            ) : (
+                              'Return'
+                            )}
                           </Button>
                         </div>
                       );

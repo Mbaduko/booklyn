@@ -3,7 +3,7 @@ import { Book, BorrowRecord, User, Notification, BorrowStatus } from '@/types/li
 import { addDays, isAfter, isBefore, differenceInDays, subDays } from 'date-fns';
 import { getUsers } from '@/api/users';
 import { getBooks } from '@/api/books';
-import { getBorrowRecords, reserveBook as reserveBookAPI, confirmPickup as confirmPickupAPI } from '@/api/borrows';
+import { getBorrowRecords, reserveBook as reserveBookAPI, confirmPickup as confirmPickupAPI, confirmReturn as confirmReturnAPI } from '@/api/borrows';
 import { getNotifications } from '@/api/notifications';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -33,7 +33,7 @@ interface LibraryContextType {
   // Borrow operations
   reserveBook: (bookId: string) => Promise<BorrowRecord>; // Now using real API
   confirmPickup: (recordId: string, loanDurationDays?: number) => Promise<BorrowRecord>; // Now using real API
-  confirmReturn: (recordId: string) => void; // Still mock
+  confirmReturn: (recordId: string) => Promise<BorrowRecord>; // Now using real API
   
   // Notification operations (still using mock for now)
   markNotificationRead: (id: string) => void;
@@ -232,20 +232,20 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const confirmReturn = (recordId: string) => {
-    const record = borrowRecords.find(r => r.id === recordId);
-    if (!record) return;
-
-    // Note: updateBook is no longer available since we use real API
-    // This would need to be handled by the API when implementing real borrow operations
-
-    setBorrowRecords(prev =>
-      prev.map(r =>
-        r.id === recordId
-          ? { ...r, status: 'returned', returnDate: new Date() }
-          : r
-      )
-    );
+  const confirmReturn = async (recordId: string) => {
+    try {
+      const updatedRecord = await confirmReturnAPI(recordId);
+      setBorrowRecords(prev =>
+        prev.map(record =>
+          record.id === recordId ? updatedRecord : record
+        )
+      );
+      await refetchBooks(); // Refresh books to update available copies
+      return updatedRecord;
+    } catch (error) {
+      console.error('Failed to confirm return:', error);
+      throw error; // Re-throw to let the calling component handle the error
+    }
   };
 
   // Notification operations

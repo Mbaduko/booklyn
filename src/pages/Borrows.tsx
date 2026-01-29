@@ -40,6 +40,26 @@ export default function Borrows() {
     }
   };
 
+  const handleConfirmReturn = async (recordId: string) => {
+    setLoadingId(recordId);
+    try {
+      await confirmReturn(recordId);
+      toast({
+        title: 'Return Confirmed',
+        description: 'Book return has been confirmed successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to confirm return:', error);
+      toast({
+        title: 'Return Failed',
+        description: error instanceof Error ? error.message : 'Failed to confirm book return',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
   const renderRecords = (records: typeof borrowRecords) => {
     if (records.length === 0) {
       return (
@@ -63,7 +83,7 @@ export default function Borrows() {
               isLibrarian={isLibrarian}
               isLoading={loadingId === record.id}
               onConfirmPickup={() => handleConfirmPickup(record.id)}
-              onConfirmReturn={() => confirmReturn(record.id)}
+              onConfirmReturn={() => handleConfirmReturn(record.id)}
             />
           );
         })}
