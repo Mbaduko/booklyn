@@ -31,7 +31,7 @@ interface LibraryContextType {
   deleteUser: (id: string) => void;
   
   // Borrow operations
-  reserveBook: (bookId: string) => Promise<void>; // Now using real API
+  reserveBook: (bookId: string) => Promise<BorrowRecord>; // Now using real API
   confirmPickup: (recordId: string, loanDurationDays?: number) => void; // Still mock
   confirmReturn: (recordId: string) => void; // Still mock
   
@@ -209,6 +209,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       const newRecord = await reserveBookAPI(bookId);
       setBorrowRecords(prev => [...prev, newRecord]);
       await refetchBooks(); // Refresh books to update available copies
+      return newRecord; // Return the reservation record
     } catch (error) {
       console.error('Failed to reserve book:', error);
       throw error; // Re-throw to let the calling component handle the error

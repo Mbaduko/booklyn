@@ -28,6 +28,7 @@ import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { Book } from '@/types/library';
 import { createBook, updateBook } from '@/api/books';
+import { format, isToday, isTomorrow, formatDistanceToNow } from 'date-fns';
 
 export default function Books() {
   const { user } = useAuth();
@@ -43,6 +44,20 @@ export default function Books() {
   const [reservingBookId, setReservingBookId] = useState<string | null>(null);
 
   const isLibrarian = user?.role === 'librarian';
+
+  // Helper function to format pickup deadline in a user-friendly way
+  const formatPickupDeadline = (expirationDate: Date): string => {
+    const now = new Date();
+    
+    if (isToday(expirationDate)) {
+      return `today at ${format(expirationDate, 'h:mm a')}`;
+    } else if (isTomorrow(expirationDate)) {
+      return `tomorrow at ${format(expirationDate, 'h:mm a')}`;
+    } else {
+      // For dates further in the future, show full date
+      return format(expirationDate, 'MMM d, yyyy at h:mm a');
+    }
+  };
 
   // Common book categories
   const bookCategories = [
@@ -257,11 +272,15 @@ export default function Books() {
       setIsReserving(true);
       setReservingBookId(selectedBook.id);
       try {
-        await reserveBook(selectedBook.id);
+        const reservation = await reserveBook(selectedBook.id);
         setIsBorrowDialogOpen(false);
+        
+        // Format the expiration date for user-friendly display
+        const pickupDeadline = formatPickupDeadline(reservation.reservationExpiresAt);
+        
         toast({
           title: 'Book reserved!',
-          description: `${selectedBook.title} has been reserved. Please pick it up within 48 hours.`,
+          description: `${selectedBook.title} has been reserved. Please pick it up ${pickupDeadline}.`,
         });
       } catch (error) {
         console.error('Failed to reserve book:', error);
