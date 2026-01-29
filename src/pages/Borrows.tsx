@@ -3,19 +3,42 @@ import { useLibrary } from '@/contexts/LibraryContext';
 import { Layout } from '@/components/Layout';
 import { BorrowCard } from '@/components/BorrowCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { toast } from '@/hooks/use-toast';
 
 export default function Borrows() {
   const { user } = useAuth();
   const { borrowRecords, getBookById, getUserById, getBorrowStatus, confirmPickup, confirmReturn } = useLibrary();
 
   const isLibrarian = user?.role === 'librarian';
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   
   const activeRecords = borrowRecords.filter(r => r.status !== 'returned');
   const reservedRecords = activeRecords.filter(r => r.status === 'reserved');
   const borrowedRecords = activeRecords.filter(r => r.status === 'borrowed' || getBorrowStatus(r) === 'due_soon');
   const overdueRecords = activeRecords.filter(r => getBorrowStatus(r) === 'overdue');
+
+  const handleConfirmPickup = async (recordId: string) => {
+    setLoadingId(recordId);
+    try {
+      await confirmPickup(recordId);
+      toast({
+        title: 'Pickup Confirmed',
+        description: 'Book pickup has been confirmed successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to confirm pickup:', error);
+      toast({
+        title: 'Pickup Failed',
+        description: error instanceof Error ? error.message : 'Failed to confirm book pickup',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingId(null);
+    }
+  };
 
   const renderRecords = (records: typeof borrowRecords) => {
     if (records.length === 0) {
@@ -38,7 +61,8 @@ export default function Borrows() {
               book={book}
               status={getBorrowStatus(record)}
               isLibrarian={isLibrarian}
-              onConfirmPickup={() => confirmPickup(record.id)}
+              isLoading={loadingId === record.id}
+              onConfirmPickup={() => handleConfirmPickup(record.id)}
               onConfirmReturn={() => confirmReturn(record.id)}
             />
           );

@@ -14,12 +14,15 @@ import {
   TrendingUp,
   ArrowRight,
   CheckCircle2,
-  CalendarClock
+  CalendarClock,
+  Loader2
 } from 'lucide-react';
 import { ChartContainer } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { toast } from '@/hooks/use-toast';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -35,6 +38,7 @@ export default function Dashboard() {
   } = useLibrary();
 
   const isLibrarian = user?.role === 'librarian';
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
   // Stats calculations
   const totalBooks = books.reduce((sum, b) => sum + b.totalCopies, 0);
@@ -49,6 +53,26 @@ export default function Dashboard() {
   const userOverdue = userRecords.filter(r => getBorrowStatus(r) === 'overdue');
   const userDueSoon = userRecords.filter(r => getBorrowStatus(r) === 'due_soon');
   const userReserved = userRecords.filter(r => r.status === 'reserved');
+
+  const handleConfirmPickup = async (recordId: string) => {
+    setLoadingId(recordId);
+    try {
+      await confirmPickup(recordId);
+      toast({
+        title: 'Pickup Confirmed',
+        description: 'Book pickup has been confirmed successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to confirm pickup:', error);
+      toast({
+        title: 'Pickup Failed',
+        description: error instanceof Error ? error.message : 'Failed to confirm book pickup',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingId(null);
+    }
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -204,8 +228,20 @@ export default function Dashboard() {
                             <p className="font-medium text-sm">{book.title}</p>
                             <p className="text-xs text-muted-foreground">{borrower?.name}</p>
                           </div>
-                          <Button size="sm" variant="emerald" onClick={() => confirmPickup(record.id)}>
-                            Confirm
+                          <Button 
+                            size="sm" 
+                            variant="emerald" 
+                            onClick={() => handleConfirmPickup(record.id)}
+                            disabled={loadingId === record.id}
+                          >
+                            {loadingId === record.id ? (
+                              <>
+                                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                Confirming...
+                              </>
+                            ) : (
+                              'Confirm'
+                            )}
                           </Button>
                         </div>
                       );

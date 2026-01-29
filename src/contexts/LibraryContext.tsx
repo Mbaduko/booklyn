@@ -3,7 +3,7 @@ import { Book, BorrowRecord, User, Notification, BorrowStatus } from '@/types/li
 import { addDays, isAfter, isBefore, differenceInDays, subDays } from 'date-fns';
 import { getUsers } from '@/api/users';
 import { getBooks } from '@/api/books';
-import { getBorrowRecords, reserveBook as reserveBookAPI } from '@/api/borrows';
+import { getBorrowRecords, reserveBook as reserveBookAPI, confirmPickup as confirmPickupAPI } from '@/api/borrows';
 import { getNotifications } from '@/api/notifications';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -32,7 +32,7 @@ interface LibraryContextType {
   
   // Borrow operations
   reserveBook: (bookId: string) => Promise<BorrowRecord>; // Now using real API
-  confirmPickup: (recordId: string, loanDurationDays?: number) => void; // Still mock
+  confirmPickup: (recordId: string, loanDurationDays?: number) => Promise<BorrowRecord>; // Now using real API
   confirmReturn: (recordId: string) => void; // Still mock
   
   // Notification operations (still using mock for now)
@@ -216,19 +216,20 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const confirmPickup = (recordId: string, loanDurationDays: number = 14) => {
-    setBorrowRecords(prev =>
-      prev.map(record =>
-        record.id === recordId
-          ? {
-              ...record,
-              status: 'borrowed',
-              pickupDate: new Date(),
-              dueDate: addDays(new Date(), loanDurationDays),
-            }
-          : record
-      )
-    );
+  const confirmPickup = async (recordId: string, loanDurationDays?: number) => {
+    try {
+      const updatedRecord = await confirmPickupAPI(recordId);
+      setBorrowRecords(prev =>
+        prev.map(record =>
+          record.id === recordId ? updatedRecord : record
+        )
+      );
+      await refetchBooks(); // Refresh books to update available copies if needed
+      return updatedRecord;
+    } catch (error) {
+      console.error('Failed to confirm pickup:', error);
+      throw error; // Re-throw to let the calling component handle the error
+    }
   };
 
   const confirmReturn = (recordId: string) => {

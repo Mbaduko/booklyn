@@ -2,7 +2,7 @@ import { BorrowRecord, Book, BorrowStatus } from '@/types/library';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Calendar, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { BookOpen, Calendar, Clock, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { motion } from 'framer-motion';
 
@@ -13,6 +13,7 @@ interface BorrowCardProps {
   onConfirmPickup?: () => void;
   onConfirmReturn?: () => void;
   isLibrarian?: boolean;
+  isLoading?: boolean;
 }
 
 export function BorrowCard({ 
@@ -21,7 +22,8 @@ export function BorrowCard({
   status, 
   onConfirmPickup, 
   onConfirmReturn,
-  isLibrarian = false 
+  isLibrarian = false,
+  isLoading = false
 }: BorrowCardProps) {
   const getStatusConfig = (status: BorrowStatus) => {
     switch (status) {
@@ -136,8 +138,15 @@ export function BorrowCard({
               {(isLibrarian || status === 'reserved') && (
                 <div className="flex gap-2 mt-4">
                   {status === 'reserved' && isLibrarian && (
-                    <Button size="sm" variant="emerald" onClick={onConfirmPickup}>
-                      Confirm Pickup
+                    <Button size="sm" variant="emerald" onClick={onConfirmPickup} disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                          Confirming...
+                        </>
+                      ) : (
+                        'Confirm Pickup'
+                      )}
                     </Button>
                   )}
                   {(status === 'borrowed' || status === 'due_soon' || status === 'overdue') && isLibrarian && (
