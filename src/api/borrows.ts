@@ -58,6 +58,33 @@ export async function getBorrowRecords(): Promise<BorrowRecord[]> {
   return Array.isArray(data) ? data.map(convertAPIToFrontend) : [];
 }
 
+export async function reserveBook(bookId: string): Promise<BorrowRecord> {
+  const res = await fetch(`${API_BASE_URL}/borrows/${bookId}/reserve`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    let error;
+    try {
+      error = await res.json();
+    } catch {
+      error = {};
+    }
+    throw new Error(error.error || error.message || 'Failed to reserve book');
+  }
+
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error('Failed to parse response data');
+  }
+  
+  // Convert API response to frontend types
+  return convertAPIToFrontend(data);
+}
+
 export async function getBorrowRecord(id: string): Promise<BorrowRecord> {
   const res = await fetch(`${API_BASE_URL}/borrows/${id}`, {
     method: 'GET',

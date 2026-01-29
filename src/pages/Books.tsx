@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, Plus, Filter, BookOpen, Upload, X } from 'lucide-react';
+import { Search, Plus, Filter, BookOpen, Upload, X, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { Book } from '@/types/library';
@@ -39,6 +39,8 @@ export default function Books() {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [isBorrowDialogOpen, setIsBorrowDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isReserving, setIsReserving] = useState(false);
+  const [reservingBookId, setReservingBookId] = useState<string | null>(null);
 
   const isLibrarian = user?.role === 'librarian';
 
@@ -250,14 +252,28 @@ export default function Books() {
     setIsBorrowDialogOpen(true);
   };
 
-  const confirmBorrow = () => {
+  const confirmBorrow = async () => {
     if (selectedBook && user) {
-      reserveBook(selectedBook.id, user.id);
-      setIsBorrowDialogOpen(false);
-      toast({
-        title: 'Book reserved!',
-        description: `${selectedBook.title} has been reserved. Please pick it up within 48 hours.`,
-      });
+      setIsReserving(true);
+      setReservingBookId(selectedBook.id);
+      try {
+        await reserveBook(selectedBook.id);
+        setIsBorrowDialogOpen(false);
+        toast({
+          title: 'Book reserved!',
+          description: `${selectedBook.title} has been reserved. Please pick it up within 48 hours.`,
+        });
+      } catch (error) {
+        console.error('Failed to reserve book:', error);
+        toast({
+          title: 'Reservation Failed',
+          description: error instanceof Error ? error.message : 'Failed to reserve book',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsReserving(false);
+        setReservingBookId(null);
+      }
     }
   };
 
@@ -344,6 +360,7 @@ export default function Books() {
                   isLibrarian={isLibrarian}
                   onBorrow={() => handleBorrow(book)}
                   onEdit={() => openEditDialog(book)}
+                  isReserving={reservingBookId === book.id}
                 />
               </motion.div>
             ))}
@@ -609,11 +626,18 @@ export default function Books() {
               </p>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsBorrowDialogOpen(false)}>
+              <Button variant="outline" onClick={() => setIsBorrowDialogOpen(false)} disabled={isReserving}>
                 Cancel
               </Button>
-              <Button variant="emerald" onClick={confirmBorrow}>
-                Confirm Reservation
+              <Button variant="emerald" onClick={confirmBorrow} disabled={isReserving}>
+                {isReserving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Reserving...
+                  </>
+                ) : (
+                  'Confirm Reservation'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

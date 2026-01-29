@@ -3,7 +3,7 @@ import { Book, BorrowRecord, User, Notification, BorrowStatus } from '@/types/li
 import { addDays, isAfter, isBefore, differenceInDays, subDays } from 'date-fns';
 import { getUsers } from '@/api/users';
 import { getBooks } from '@/api/books';
-import { getBorrowRecords } from '@/api/borrows';
+import { getBorrowRecords, reserveBook as reserveBookAPI } from '@/api/borrows';
 import { getNotifications } from '@/api/notifications';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -30,10 +30,10 @@ interface LibraryContextType {
   updateUser: (id: string, updates: Partial<User>) => void;
   deleteUser: (id: string) => void;
   
-  // Borrow operations (still using mock for now)
-  reserveBook: (bookId: string, userId: string) => void;
-  confirmPickup: (recordId: string, loanDurationDays?: number) => void;
-  confirmReturn: (recordId: string) => void;
+  // Borrow operations
+  reserveBook: (bookId: string) => Promise<void>; // Now using real API
+  confirmPickup: (recordId: string, loanDurationDays?: number) => void; // Still mock
+  confirmReturn: (recordId: string) => void; // Still mock
   
   // Notification operations (still using mock for now)
   markNotificationRead: (id: string) => void;
@@ -204,34 +204,15 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   };
 
   // Borrow operations
-  const reserveBook = (bookId: string, userId: string) => {
-    const book = books.find(b => b.id === bookId);
-    if (!book || book.availableCopies <= 0) return;
-
-    const newRecord: BorrowRecord = {
-      id: generateId(),
-      bookId,
-      userId,
-      status: 'reserved',
-      reservedAt: new Date(),
-      reservationExpiresAt: addDays(new Date(), 2),
-    };
-
-    setBorrowRecords(prev => [...prev, newRecord]);
-    // Note: updateBook is no longer available since we use real API
-    // This would need to be handled by the API when implementing real borrow operations
-
-    // Add notification
-    const newNotification: Notification = {
-      id: generateId(),
-      userId,
-      title: 'Book Reserved',
-      message: `${book.title} has been reserved. Please pick it up within 48 hours.`,
-      type: 'success',
-      read: false,
-      createdAt: new Date(),
-    };
-    setNotifications(prev => [...prev, newNotification]);
+  const reserveBook = async (bookId: string) => {
+    try {
+      const newRecord = await reserveBookAPI(bookId);
+      setBorrowRecords(prev => [...prev, newRecord]);
+      await refetchBooks(); // Refresh books to update available copies
+    } catch (error) {
+      console.error('Failed to reserve book:', error);
+      throw error; // Re-throw to let the calling component handle the error
+    }
   };
 
   const confirmPickup = (recordId: string, loanDurationDays: number = 14) => {

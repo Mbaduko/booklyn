@@ -2,7 +2,7 @@ import { Book } from '@/types/library';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, User, Calendar } from 'lucide-react';
+import { BookOpen, User, Calendar, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface BookCardProps {
@@ -11,9 +11,10 @@ interface BookCardProps {
   onEdit?: () => void;
   showActions?: boolean;
   isLibrarian?: boolean;
+  isReserving?: boolean;
 }
 
-export function BookCard({ book, onBorrow, onEdit, showActions = true, isLibrarian = false }: BookCardProps) {
+export function BookCard({ book, onBorrow, onEdit, showActions = true, isLibrarian = false, isReserving = false }: BookCardProps) {
   const isAvailable = book.availableCopies > 0;
 
   return (
@@ -80,8 +81,16 @@ export function BookCard({ book, onBorrow, onEdit, showActions = true, isLibrari
                   size="sm" 
                   className="flex-1"
                   onClick={onBorrow}
+                  disabled={isReserving}
                 >
-                  Borrow
+                  {isReserving ? (
+                    <>
+                      <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                      Reserving...
+                    </>
+                  ) : (
+                    'Borrow'
+                  )}
                 </Button>
               )}
               {isLibrarian && (
