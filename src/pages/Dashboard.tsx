@@ -43,13 +43,13 @@ export default function Dashboard() {
   // Stats calculations
   const totalBooks = books.reduce((sum, b) => sum + b.totalCopies, 0);
   const availableBooks = books.reduce((sum, b) => sum + b.availableCopies, 0);
-  const activeRecords = borrowRecords.filter(r => r.status !== 'returned');
+  const activeRecords = borrowRecords.filter(r => r.status !== 'returned' && r.status !== 'expired');
   const overdueRecords = activeRecords.filter(r => getBorrowStatus(r) === 'overdue');
   const reservedRecords = activeRecords.filter(r => r.status === 'reserved');
   const borrowedRecords = activeRecords.filter(r => r.status === 'borrowed' || getBorrowStatus(r) === 'due_soon');
 
   // User-specific records
-  const userRecords = borrowRecords.filter(r => r.userId === user?.id && r.status !== 'returned');
+  const userRecords = borrowRecords.filter(r => r.userId === user?.id && r.status !== 'returned' && r.status !== 'expired');
   const userOverdue = userRecords.filter(r => getBorrowStatus(r) === 'overdue');
   const userDueSoon = userRecords.filter(r => getBorrowStatus(r) === 'due_soon');
   const userReserved = userRecords.filter(r => r.status === 'reserved');

@@ -26,7 +26,7 @@ export default function Reports() {
           <StatsCard title="Total Books" value={books.reduce((s, b) => s + b.totalCopies, 0)} icon={BookOpen} variant="primary" />
           <StatsCard title="Active Users" value={users.filter(u => u.isActive).length} icon={Users} />
           <StatsCard title="Total Borrows" value={borrowRecords.length} icon={TrendingUp} variant="success" />
-          <StatsCard title="Active Borrows" value={borrowRecords.filter(r => r.status !== 'returned').length} icon={Clock} variant="warning" />
+          <StatsCard title="Active Borrows" value={borrowRecords.filter(r => r.status !== 'returned' && r.status !== 'expired').length} icon={Clock} variant="warning" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

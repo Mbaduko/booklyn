@@ -15,7 +15,7 @@ export default function Borrows() {
   const isLibrarian = user?.role === 'librarian';
   const [loadingId, setLoadingId] = useState<string | null>(null);
   
-  const activeRecords = borrowRecords.filter(r => r.status !== 'returned');
+  const activeRecords = borrowRecords.filter(r => r.status !== 'returned' && r.status !== 'expired');
   const reservedRecords = activeRecords.filter(r => r.status === 'reserved');
   const borrowedRecords = activeRecords.filter(r => r.status === 'borrowed' || getBorrowStatus(r) === 'due_soon');
   const overdueRecords = activeRecords.filter(r => getBorrowStatus(r) === 'overdue');

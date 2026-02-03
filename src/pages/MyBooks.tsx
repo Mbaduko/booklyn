@@ -10,7 +10,7 @@ export default function MyBooks() {
   const { user } = useAuth();
   const { borrowRecords, getBookById, getBorrowStatus } = useLibrary();
 
-  const userRecords = borrowRecords.filter(r => r.userId === user?.id && r.status !== 'returned');
+  const userRecords = borrowRecords.filter(r => r.userId === user?.id && r.status !== 'returned' && r.status !== 'expired');
 
   return (
     <Layout>

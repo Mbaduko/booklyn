@@ -261,7 +261,16 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
 
   const getBorrowStatus = (record: BorrowRecord): BorrowStatus => {
     if (record.status === 'returned') return 'returned';
-    if (record.status === 'reserved') return 'reserved';
+    if (record.status === 'expired') return 'expired';
+    
+    if (record.status === 'reserved') {
+      // Check if reservation has expired
+      const now = new Date();
+      if (record.reservationExpiresAt && isAfter(now, record.reservationExpiresAt)) {
+        return 'expired';
+      }
+      return 'reserved';
+    }
     
     if (record.dueDate) {
       const now = new Date();

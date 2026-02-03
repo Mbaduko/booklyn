@@ -58,7 +58,7 @@ export default function UsersManagement() {
 
   const getUserStats = (userId: string) => {
     const userRecords = borrowRecords.filter(r => r.userId === userId);
-    const active = userRecords.filter(r => r.status !== 'returned');
+    const active = userRecords.filter(r => r.status !== 'returned' && r.status !== 'expired');
     const overdue = active.filter(r => getBorrowStatus(r) === 'overdue');
     const total = userRecords.length;
     return { active: active.length, overdue: overdue.length, total };
@@ -338,7 +338,7 @@ export default function UsersManagement() {
                   <h4 className="font-semibold mb-3">Current Books</h4>
                   <div className="space-y-2">
                     {borrowRecords
-                      .filter(r => r.userId === selectedUser.id && r.status !== 'returned')
+                      .filter(r => r.userId === selectedUser.id && r.status !== 'returned' && r.status !== 'expired')
                       .map(record => {
                         const book = getBookById(record.bookId);
                         return (
@@ -348,8 +348,8 @@ export default function UsersManagement() {
                                 <p className="font-medium">{book?.title}</p>
                                 <p className="text-sm text-muted-foreground">{book?.author}</p>
                               </div>
-                              <Badge variant={getBorrowStatus(record) as any}>
-                                {getBorrowStatus(record).replace('_', ' ')}
+                              <Badge variant={record.status as any}>
+                                {record.status.replace('_', ' ')}
                               </Badge>
                             </div>
                             <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
@@ -361,7 +361,7 @@ export default function UsersManagement() {
                                 <span>Picked up: {format(record.pickupDate, 'yyyy/MM/dd HH:mm')}</span>
                               )}
                               {record.dueDate && (
-                                <span className={getBorrowStatus(record) === 'overdue' ? 'text-destructive' : getBorrowStatus(record) === 'due_soon' ? 'text-warning' : ''}>
+                                <span className={record.status === 'overdue' ? 'text-destructive' : record.status === 'due_soon' ? 'text-warning' : ''}>
                                   Due: {format(record.dueDate, 'yyyy/MM/dd HH:mm')}
                                 </span>
                               )}
@@ -372,7 +372,7 @@ export default function UsersManagement() {
                           </div>
                         );
                       })}
-                    {borrowRecords.filter(r => r.userId === selectedUser.id && r.status !== 'returned').length === 0 && (
+                    {borrowRecords.filter(r => r.userId === selectedUser.id && r.status !== 'returned' && r.status !== 'expired').length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-4">No active books</p>
                     )}
                   </div>

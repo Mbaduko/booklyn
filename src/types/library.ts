@@ -1,6 +1,6 @@
 export type UserRole = 'librarian' | 'client';
 
-export type BorrowStatus = 'reserved' | 'borrowed' | 'due_soon' | 'overdue' | 'returned';
+export type BorrowStatus = 'reserved' | 'borrowed' | 'due_soon' | 'overdue' | 'returned' | 'expired';
 
 export interface User {
   id: string;

@@ -55,6 +55,13 @@ export function BorrowCard({
           variant: 'overdue' as const,
           color: 'text-destructive'
         };
+      case 'expired':
+        return { 
+          label: 'Expired', 
+          icon: Clock, 
+          variant: 'secondary' as const,
+          color: 'text-muted-foreground'
+        };
       case 'returned':
         return { 
           label: 'Returned', 
@@ -72,10 +79,10 @@ export function BorrowCard({
     }
   };
 
-  const statusConfig = getStatusConfig(status);
+  const statusConfig = getStatusConfig(record.status);
   const StatusIcon = statusConfig.icon;
 
-  const overdueDays = record.dueDate && status === 'overdue' 
+  const overdueDays = record.dueDate && record.status === 'overdue' 
     ? differenceInDays(new Date(), record.dueDate) 
     : 0;
 
@@ -129,7 +136,7 @@ export function BorrowCard({
                 )}
                 
                 {record.dueDate && (
-                  <div className={`flex items-center gap-1.5 ${status === 'overdue' ? 'text-destructive' : status === 'due_soon' ? 'text-warning' : 'text-muted-foreground'}`}>
+                  <div className={`flex items-center gap-1.5 ${record.status === 'overdue' ? 'text-destructive' : record.status === 'due_soon' ? 'text-warning' : 'text-muted-foreground'}`}>
                     <Clock className="h-4 w-4" />
                     <span>Due: {format(record.dueDate, 'yyyy/MM/dd HH:mm')}</span>
                   </div>
@@ -143,15 +150,15 @@ export function BorrowCard({
                 )}
               </div>
 
-              {status === 'overdue' && (
+              {record.status === 'overdue' && (
                 <p className="text-sm text-destructive mt-2 font-medium">
                   {overdueDays} day{overdueDays !== 1 ? 's' : ''} overdue
                 </p>
               )}
 
-              {(isLibrarian || status === 'reserved') && (
+              {(isLibrarian || record.status === 'reserved') && (
                 <div className="flex gap-2 mt-4">
-                  {status === 'reserved' && isLibrarian && (
+                  {record.status === 'reserved' && isLibrarian && (
                     <Button size="sm" variant="emerald" onClick={onConfirmPickup} disabled={isLoading}>
                       {isLoading ? (
                         <>
@@ -163,7 +170,7 @@ export function BorrowCard({
                       )}
                     </Button>
                   )}
-                  {(status === 'borrowed' || status === 'due_soon' || status === 'overdue') && isLibrarian && (
+                  {(record.status === 'borrowed' || record.status === 'due_soon' || record.status === 'overdue') && isLibrarian && (
                     <Button size="sm" variant="success" onClick={onConfirmReturn} disabled={isLoading}>
                       {isLoading ? (
                         <>
