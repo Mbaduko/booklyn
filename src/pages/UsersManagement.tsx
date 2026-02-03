@@ -342,14 +342,33 @@ export default function UsersManagement() {
                       .map(record => {
                         const book = getBookById(record.bookId);
                         return (
-                          <div key={record.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                            <div>
-                              <p className="font-medium">{book?.title}</p>
-                              <p className="text-sm text-muted-foreground">{book?.author}</p>
+                          <div key={record.id} className="p-3 bg-muted/50 rounded-lg space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium">{book?.title}</p>
+                                <p className="text-sm text-muted-foreground">{book?.author}</p>
+                              </div>
+                              <Badge variant={getBorrowStatus(record) as any}>
+                                {getBorrowStatus(record).replace('_', ' ')}
+                              </Badge>
                             </div>
-                            <Badge variant={getBorrowStatus(record) as any}>
-                              {getBorrowStatus(record).replace('_', ' ')}
-                            </Badge>
+                            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                              <span>Reserved: {format(record.reservedAt, 'yyyy/MM/dd HH:mm')}</span>
+                              {record.reservationExpiresAt && (
+                                <span className="text-warning">Expires: {format(record.reservationExpiresAt, 'yyyy/MM/dd HH:mm')}</span>
+                              )}
+                              {record.pickupDate && (
+                                <span>Picked up: {format(record.pickupDate, 'yyyy/MM/dd HH:mm')}</span>
+                              )}
+                              {record.dueDate && (
+                                <span className={getBorrowStatus(record) === 'overdue' ? 'text-destructive' : getBorrowStatus(record) === 'due_soon' ? 'text-warning' : ''}>
+                                  Due: {format(record.dueDate, 'yyyy/MM/dd HH:mm')}
+                                </span>
+                              )}
+                              {record.returnDate && (
+                                <span>Returned: {format(record.returnDate, 'yyyy/MM/dd HH:mm')}</span>
+                              )}
+                            </div>
                           </div>
                         );
                       })}

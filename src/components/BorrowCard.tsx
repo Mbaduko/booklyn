@@ -111,20 +111,34 @@ export function BorrowCard({
               <div className="flex flex-wrap gap-4 mt-3 text-sm">
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>Reserved: {format(record.reservedAt, 'MMM d, yyyy')}</span>
+                  <span>Reserved: {format(record.reservedAt, 'yyyy/MM/dd HH:mm')}</span>
                 </div>
+                
+                {record.reservationExpiresAt && (
+                  <div className="flex items-center gap-1.5 text-warning">
+                    <Clock className="h-4 w-4" />
+                    <span>Expires: {format(record.reservationExpiresAt, 'yyyy/MM/dd HH:mm')}</span>
+                  </div>
+                )}
                 
                 {record.pickupDate && (
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <CheckCircle2 className="h-4 w-4" />
-                    <span>Picked up: {format(record.pickupDate, 'MMM d, yyyy')}</span>
+                    <span>Picked up: {format(record.pickupDate, 'yyyy/MM/dd HH:mm')}</span>
                   </div>
                 )}
                 
                 {record.dueDate && (
                   <div className={`flex items-center gap-1.5 ${status === 'overdue' ? 'text-destructive' : status === 'due_soon' ? 'text-warning' : 'text-muted-foreground'}`}>
                     <Clock className="h-4 w-4" />
-                    <span>Due: {format(record.dueDate, 'MMM d, yyyy')}</span>
+                    <span>Due: {format(record.dueDate, 'yyyy/MM/dd HH:mm')}</span>
+                  </div>
+                )}
+                
+                {record.returnDate && (
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Returned: {format(record.returnDate, 'yyyy/MM/dd HH:mm')}</span>
                   </div>
                 )}
               </div>

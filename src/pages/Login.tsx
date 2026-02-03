@@ -44,7 +44,7 @@ export default function Login() {
     setIsLoading(true);
     const credentials = role === 'librarian' 
       ? { email: 'librarian@library.com', password: 'password123' }
-      : { email: 'client@library.com', password: 'password123' };
+      : { email: 'mbadukosupersonic@gmail.com', password: 'password123' };
     
     const success = await login(credentials.email, credentials.password);
     
