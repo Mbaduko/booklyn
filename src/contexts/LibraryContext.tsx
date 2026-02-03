@@ -3,7 +3,7 @@ import { Book, BorrowRecord, User, Notification, BorrowStatus } from '@/types/li
 import { addDays, isAfter, isBefore, differenceInDays, subDays } from 'date-fns';
 import { getUsers } from '@/api/users';
 import { getBooks } from '@/api/books';
-import { getBorrowRecords, reserveBook as reserveBookAPI, confirmPickup as confirmPickupAPI, confirmReturn as confirmReturnAPI } from '@/api/borrows';
+import { getBorrowRecords, reserveBook as reserveBookAPI, confirmPickup as confirmPickupAPI, confirmReturn as confirmReturnAPI, getBorrowHistory as getBorrowHistoryAPI } from '@/api/borrows';
 import { getNotifications } from '@/api/notifications';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -43,6 +43,7 @@ interface LibraryContextType {
   getUserById: (id: string) => User | undefined;
   getBorrowStatus: (record: BorrowRecord) => BorrowStatus;
   getUserBorrowRecords: (userId: string) => BorrowRecord[];
+  getBorrowHistory: (fromDate?: Date, toDate?: Date) => Promise<BorrowRecord[]>;
 }
 
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
@@ -285,6 +286,15 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     return borrowRecords.filter(r => r.userId === userId);
   };
 
+  const getBorrowHistory = async (fromDate?: Date, toDate?: Date) => {
+    try {
+      return await getBorrowHistoryAPI(fromDate, toDate);
+    } catch (error) {
+      console.error('Failed to fetch borrow history:', error);
+      throw error;
+    }
+  };
+
   return (
     <LibraryContext.Provider
       value={{
@@ -315,6 +325,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         getUserById,
         getBorrowStatus,
         getUserBorrowRecords,
+        getBorrowHistory,
       }}
     >
       {children}

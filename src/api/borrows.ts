@@ -139,6 +139,42 @@ export async function confirmReturn(borrowId: string): Promise<BorrowRecord> {
   return convertAPIToFrontend(data);
 }
 
+export async function getBorrowHistory(fromDate?: Date, toDate?: Date): Promise<BorrowRecord[]> {
+  const params = new URLSearchParams();
+  
+  if (fromDate) {
+    params.append('from', fromDate.toISOString());
+  }
+  
+  if (toDate) {
+    params.append('to', toDate.toISOString());
+  }
+  
+  const res = await fetch(`${API_BASE_URL}/borrows/history?${params}`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    let error;
+    try {
+      error = await res.json();
+    } catch {
+      error = {};
+    }
+    throw new Error(error.error || error.message || 'Failed to fetch borrow history');
+  }
+
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error('Failed to parse response data');
+  }
+
+  // Convert API response to frontend types
+  return data.map((item: any) => convertAPIToFrontend(item));
+}
+
 export async function getBorrowRecord(id: string): Promise<BorrowRecord> {
   const res = await fetch(`${API_BASE_URL}/borrows/${id}`, {
     method: 'GET',

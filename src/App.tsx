@@ -13,6 +13,7 @@ import Books from "./pages/Books";
 import UsersManagement from "./pages/UsersManagement";
 import Borrows from "./pages/Borrows";
 import MyBooks from "./pages/MyBooks";
+import History from "./pages/History";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
@@ -75,7 +76,7 @@ function AppRoutes() {
       <Route path="/users" element={<ProtectedRoute><LibrarianRoute><UsersManagement /></LibrarianRoute></ProtectedRoute>} />
       <Route path="/borrows" element={<ProtectedRoute><Borrows /></ProtectedRoute>} />
       <Route path="/my-books" element={<ProtectedRoute><MyBooks /></ProtectedRoute>} />
-      <Route path="/history" element={<ProtectedRoute><MyBooks /></ProtectedRoute>} />
+      <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><LibrarianRoute><Reports /></LibrarianRoute></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>

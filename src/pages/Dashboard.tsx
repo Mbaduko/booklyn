@@ -21,7 +21,8 @@ import { ChartContainer } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 
 export default function Dashboard() {
@@ -34,11 +35,14 @@ export default function Dashboard() {
     getUserById,
     getBorrowStatus,
     confirmPickup,
-    confirmReturn
+    confirmReturn,
+    getBorrowHistory
   } = useLibrary();
 
   const isLibrarian = user?.role === 'librarian';
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   // Stats calculations
   const totalBooks = books.reduce((sum, b) => sum + b.totalCopies, 0);
@@ -53,6 +57,68 @@ export default function Dashboard() {
   const userOverdue = userRecords.filter(r => getBorrowStatus(r) === 'overdue');
   const userDueSoon = userRecords.filter(r => getBorrowStatus(r) === 'due_soon');
   const userReserved = userRecords.filter(r => r.status === 'reserved');
+
+  // Fetch history data for charts
+  useEffect(() => {
+    const fetchHistoryData = async () => {
+      if (!isLibrarian) return;
+      
+      setIsLoadingHistory(true);
+      try {
+        const endDate = new Date();
+        const startDate = subDays(endDate, 30); // Get last 30 days of data
+        const history = await getBorrowHistory(startDate, endDate);
+        setHistoryData(history);
+      } catch (error) {
+        console.error('Failed to fetch history data:', error);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    fetchHistoryData();
+  }, [isLibrarian, getBorrowHistory]);
+
+  // Generate real weekly activity data
+  const generateWeeklyActivity = () => {
+    const now = new Date();
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
+    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+    const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+    return days.map(day => {
+      const dayStr = format(day, 'EEE');
+      const dayHistory = historyData.filter(record => {
+        const recordDate = new Date(record.reservedAt);
+        return format(recordDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd');
+      });
+
+      const loans = dayHistory.filter(r => r.status === 'borrowed' || r.status === 'returned').length;
+      const returns = dayHistory.filter(r => r.status === 'returned').length;
+
+      return { day: dayStr, Loans: loans, Returns: returns };
+    });
+  };
+
+  // Generate real category data
+  const generateCategoryData = () => {
+    const categoryCount: { [key: string]: number } = {};
+    
+    historyData.forEach(record => {
+      const book = getBookById(record.bookId);
+      if (book) {
+        categoryCount[book.category] = (categoryCount[book.category] || 0) + 1;
+      }
+    });
+
+    const colors = ['#22705e', '#fa7575', '#fbbf24', '#60a5fa', '#a78bfa', '#f472b6'];
+    
+    return Object.entries(categoryCount).map(([name, value], index) => ({
+      name,
+      value,
+      color: colors[index % colors.length]
+    }));
+  };
 
   const handleConfirmPickup = async (recordId: string) => {
     setLoadingId(recordId);
@@ -108,22 +174,8 @@ export default function Dashboard() {
   };
 
   if (isLibrarian) {
-    // Example data for charts (replace with real data as needed)
-    const weeklyActivity = [
-      { day: 'Mon', Loans: 25, Returns: 16 },
-      { day: 'Tue', Loans: 32, Returns: 29 },
-      { day: 'Wed', Loans: 17, Returns: 21 },
-      { day: 'Thu', Loans: 45, Returns: 33 },
-      { day: 'Fri', Loans: 36, Returns: 42 },
-      { day: 'Sat', Loans: 52, Returns: 48 },
-      { day: 'Sun', Loans: 15, Returns: 12 },
-    ];
-    const categoryData = [
-      { name: 'Fiction', value: 400, color: '#22705e' },
-      { name: 'Non-Fiction', value: 300, color: '#fa7575' },
-      { name: 'Science', value: 200, color: '#fbbf24' },
-      { name: 'History', value: 150, color: '#64748b' },
-    ];
+    const weeklyActivity = generateWeeklyActivity();
+    const categoryData = generateCategoryData();
 
     return (
       <Layout>
