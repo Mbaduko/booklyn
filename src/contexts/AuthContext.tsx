@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '@/types/library';
 
-import { login as apiLogin, AuthResponse } from '@/api/auth';
+import { login as apiLogin, signup as apiSignup, AuthResponse, SignupResponse } from '@/api/auth';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
+  signup: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
   switchRole: (role: UserRole) => void;
 }
@@ -51,6 +52,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Signup using real API
+  const signup = async (name: string, email: string, password: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const response: SignupResponse = await apiSignup({ name, email, password });
+      setUser(response.user);
+      localStorage.setItem('library_user', JSON.stringify(response.user));
+      localStorage.setItem('library_token', response.token);
+      
+      // Dispatch event to trigger data refetch in other contexts
+      window.dispatchEvent(new Event('user-logged-in'));
+      
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      setIsLoading(false);
+      return false;
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('library_user');
@@ -72,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         isLoading,
         login,
+        signup,
         logout,
         switchRole,
       }}

@@ -6,35 +6,56 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { BookOpen, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { BookOpen, Mail, Lock, ArrowRight, Loader2, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from '@/hooks/use-toast';
 
 export default function Login() {
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, signup } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const success = await login(email, password);
+    let success;
+    if (isLogin) {
+      success = await login(email, password);
+      if (success) {
+        toast({
+          title: 'Welcome back!',
+          description: 'You have successfully logged in.',
+        });
+      } else {
+        toast({
+          title: 'Login failed',
+          description: 'Invalid email or password. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    } else {
+      success = await signup(name, email, password);
+      if (success) {
+        toast({
+          title: 'Account created!',
+          description: 'Your account has been created successfully.',
+        });
+      } else {
+        toast({
+          title: 'Signup failed',
+          description: 'Failed to create account. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    }
     
     if (success) {
-      toast({
-        title: 'Welcome back!',
-        description: 'You have successfully logged in.',
-      });
       navigate('/dashboard');
-    } else {
-      toast({
-        title: 'Login failed',
-        description: 'Invalid email or password. Please try again.',
-        variant: 'destructive',
-      });
     }
     
     setIsLoading(false);
@@ -127,13 +148,38 @@ export default function Login() {
 
           <Card variant="elevated" className="border-0 shadow-lg">
             <CardHeader className="space-y-1 pb-6">
-              <CardTitle className="text-2xl font-display">Welcome back</CardTitle>
+              <CardTitle className="text-2xl font-display">
+                {isLogin ? 'Welcome back' : 'Create account'}
+              </CardTitle>
               <CardDescription>
-                Sign in to your account to continue
+                {isLogin 
+                  ? 'Sign in to your account to continue'
+                  : 'Sign up to get started with Booklyn'
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {!isLogin && (
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="name"
+                        type="text"
+                        placeholder="John Doe"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="pl-10"
+                        required
+                        minLength={2}
+                        maxLength={50}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <div className="relative">
@@ -162,6 +208,7 @@ export default function Login() {
                       onChange={(e) => setPassword(e.target.value)}
                       className="pl-10"
                       required
+                      minLength={8}
                     />
                   </div>
                 </div>
@@ -177,46 +224,68 @@ export default function Login() {
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <>
-                      Sign in
+                      {isLogin ? 'Sign in' : 'Sign up'}
                       <ArrowRight className="h-4 w-4" />
                     </>
                   )}
                 </Button>
               </form>
 
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">
-                    Quick demo access
-                  </span>
-                </div>
-              </div>
+              {isLogin && (
+                <>
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-border" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-card px-2 text-muted-foreground">
+                        Quick demo access
+                      </span>
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => handleDemoLogin('librarian')}
-                  disabled={isLoading}
-                  className="text-sm"
-                >
-                  Librarian Demo
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => handleDemoLogin('client')}
-                  disabled={isLoading}
-                  className="text-sm"
-                >
-                  Client Demo
-                </Button>
-              </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => handleDemoLogin('librarian')}
+                      disabled={isLoading}
+                      className="text-sm"
+                    >
+                      Librarian Demo
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleDemoLogin('client')}
+                      disabled={isLoading}
+                      className="text-sm"
+                    >
+                      Client Demo
+                    </Button>
+                  </div>
 
-              <p className="text-center text-sm text-muted-foreground mt-6">
-                Demo credentials: any email above with password <code className="bg-muted px-1 py-0.5 rounded text-xs">password123</code>
-              </p>
+                  <p className="text-center text-sm text-muted-foreground mt-6">
+                    Demo credentials: any email above with password <code className="bg-muted px-1 py-0.5 rounded text-xs">password123</code>
+                  </p>
+                </>
+              )}
+
+              <div className="text-center mt-6">
+                <p className="text-sm text-muted-foreground">
+                  {isLogin ? "Don't have an account?" : "Already have an account?"}
+                  <Button
+                    variant="link"
+                    className="p-0 ml-1 h-auto font-normal"
+                    onClick={() => {
+                      setIsLogin(!isLogin);
+                      setName('');
+                      setEmail('');
+                      setPassword('');
+                    }}
+                  >
+                    {isLogin ? 'Sign up' : 'Sign in'}
+                  </Button>
+                </p>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
