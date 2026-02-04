@@ -454,19 +454,42 @@ export default function Reports() {
       data.forEach((text, index) => {
         const width = colWidths[index];
         
-        // Add text (truncate if too long) - more aggressive truncation
-        const maxLength = Math.floor(width / 3.5); // Further reduced character limit
-        const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-        
         if (isHeader) {
           pdf.setFont(undefined, 'bold');
-          pdf.setFontSize(6); // Further reduced from 7pt to 6pt
+          pdf.setFontSize(8); // Increased from 6pt to 8pt
         } else {
           pdf.setFont(undefined, 'normal');
-          pdf.setFontSize(5); // Further reduced from 6pt to 5pt
+          pdf.setFontSize(7); // Increased from 5pt to 7pt
         }
         
-        pdf.text(truncatedText, x + 0.5, y); // Reduced padding
+        // Text wrapping logic
+        const maxLineWidth = width - 2; // 2mm padding
+        const words = text.split(' ');
+        let lines = [];
+        let currentLine = '';
+        
+        for (const word of words) {
+          const testLine = currentLine ? currentLine + ' ' + word : word;
+          const textWidth = pdf.getTextWidth(testLine);
+          
+          if (textWidth > maxLineWidth && currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        }
+        if (currentLine) {
+          lines.push(currentLine);
+        }
+        
+        // Draw wrapped text
+        const lineHeight = 3; // Line height in mm
+        const startY = y - (lines.length - 1) * lineHeight / 2;
+        
+        lines.forEach((line, lineIndex) => {
+          pdf.text(line, x + 1, startY + (lineIndex * lineHeight));
+        });
         
         // Draw cell border after text to ensure it's visible
         pdf.setDrawColor(200, 200, 200);
