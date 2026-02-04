@@ -459,19 +459,80 @@ export default function Reports() {
         let lines = [];
         let currentLine = '';
         
-        for (const word of words) {
-          const testLine = currentLine ? currentLine + ' ' + word : word;
-          const textWidth = pdf.getTextWidth(testLine);
-          
-          if (textWidth > maxLineWidth && currentLine) {
-            lines.push(currentLine);
-            currentLine = word;
+        // Special handling for email addresses - break at @ symbol if needed
+        if (index === 5 && text.includes('@')) { // Email column
+          const emailParts = text.split('@');
+          if (emailParts.length === 2) {
+            // Handle username part
+            const usernameWords = emailParts[0].split(' ');
+            let usernameLine = '';
+            
+            for (const word of usernameWords) {
+              const testLine = usernameLine ? usernameLine + ' ' + word : word;
+              const textWidth = pdf.getTextWidth(testLine);
+              
+              if (textWidth > maxLineWidth - 10 && usernameLine) { // Leave space for @
+                lines.push(usernameLine);
+                usernameLine = word;
+              } else {
+                usernameLine = testLine;
+              }
+            }
+            if (usernameLine) {
+              lines.push(usernameLine + '@');
+            }
+            
+            // Handle domain part
+            const domainWords = emailParts[1].split(' ');
+            let domainLine = '';
+            
+            for (const word of domainWords) {
+              const testLine = domainLine ? domainLine + ' ' + word : word;
+              const textWidth = pdf.getTextWidth(testLine);
+              
+              if (textWidth > maxLineWidth && domainLine) {
+                lines.push(domainLine);
+                domainLine = word;
+              } else {
+                domainLine = testLine;
+              }
+            }
+            if (domainLine) {
+              lines.push(domainLine);
+            }
           } else {
-            currentLine = testLine;
+            // Fallback to normal wrapping
+            for (const word of words) {
+              const testLine = currentLine ? currentLine + ' ' + word : word;
+              const textWidth = pdf.getTextWidth(testLine);
+              
+              if (textWidth > maxLineWidth && currentLine) {
+                lines.push(currentLine);
+                currentLine = word;
+              } else {
+                currentLine = testLine;
+              }
+            }
+            if (currentLine) {
+              lines.push(currentLine);
+            }
           }
-        }
-        if (currentLine) {
-          lines.push(currentLine);
+        } else {
+          // Normal text wrapping for other columns
+          for (const word of words) {
+            const testLine = currentLine ? currentLine + ' ' + word : word;
+            const textWidth = pdf.getTextWidth(testLine);
+            
+            if (textWidth > maxLineWidth && currentLine) {
+              lines.push(currentLine);
+              currentLine = word;
+            } else {
+              currentLine = testLine;
+            }
+          }
+          if (currentLine) {
+            lines.push(currentLine);
+          }
         }
         
         maxLinesInRow = Math.max(maxLinesInRow, lines.length);
@@ -573,7 +634,7 @@ export default function Reports() {
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(8);
       pdf.setFont(undefined, 'normal');
-      pdf.text('Confidential - Library Management Report', 148, 204, { align: 'center' });
+      pdf.text('Library Management Report', 148, 204, { align: 'center' });
       pdf.text(`Page ${i} of ${pageCount}`, 280, 204, { align: 'right' });
     }
     
