@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { BookOpen, Users, TrendingUp, Clock, BarChart3, Book, Download, Calendar, FileText, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { BookOpen, Users, TrendingUp, Clock, BarChart3, Book, Download, Calendar, FileText, FileSpreadsheet, Loader2, RefreshCw } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { useState, useEffect } from 'react';
 import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
@@ -18,7 +18,7 @@ import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
 export default function Reports() {
-  const { books, users, borrowRecords, getBookById, getBorrowHistory, isLoadingBooks, isLoadingUsers, isLoadingBorrowRecords } = useLibrary();
+  const { books, users, borrowRecords, getBookById, getBorrowHistory, isLoadingBooks, isLoadingUsers, isLoadingBorrowRecords, refetchBooks, refetchUsers, refetchBorrowRecords } = useLibrary();
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
@@ -27,6 +27,7 @@ export default function Reports() {
   const [reportEndDate, setReportEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [reportFormat, setReportFormat] = useState<'excel' | 'pdf'>('excel');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Dashboard colors
   const COLORS = ['#22705e', '#fa7575', '#fbbf24', '#60a5fa', '#a78bfa', '#f472b6'];
@@ -49,6 +50,30 @@ export default function Reports() {
 
     fetchHistoryData();
   }, [getBorrowHistory]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        refetchBooks(),
+        refetchUsers(),
+        refetchBorrowRecords()
+      ]);
+      toast({
+        title: 'Data Refreshed',
+        description: 'Reports data has been updated successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to refresh data:', error);
+      toast({
+        title: 'Refresh Failed',
+        description: 'Failed to update reports data. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Show loading animation while data is being fetched
   const isAnyLoading = isLoadingBooks || isLoadingUsers || isLoadingBorrowRecords;
@@ -702,7 +727,18 @@ export default function Reports() {
   return (
     <Layout>
       <div className="space-y-6">
-        <h1 className="text-3xl font-display font-bold">Reports & Analytics</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-display font-bold">Reports & Analytics</h1>
+          <Button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </div>
         
         <Tabs defaultValue="books" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">

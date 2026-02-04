@@ -3,22 +3,13 @@ import { useLibrary } from '@/contexts/LibraryContext';
 import { Layout } from '@/components/Layout';
 import { StatsCard } from '@/components/StatsCard';
 import { BorrowCard } from '@/components/BorrowCard';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { 
-  BookOpen, 
-  Users, 
-  Clock, 
-  AlertTriangle, 
-  TrendingUp,
-  ArrowRight,
-  CheckCircle2,
-  CalendarClock,
-  Loader2
-} from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BookOpen, Users, TrendingUp, Clock, BarChart3, Book, Download, Calendar, FileText, FileSpreadsheet, Loader2, RefreshCw, AlertTriangle, CalendarClock, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { ChartContainer } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
@@ -39,13 +30,17 @@ export default function Dashboard() {
     getBorrowHistory,
     isLoadingBooks,
     isLoadingUsers,
-    isLoadingBorrowRecords
+    isLoadingBorrowRecords,
+    refetchBooks,
+    refetchUsers,
+    refetchBorrowRecords
   } = useLibrary();
 
   const isLibrarian = user?.role === 'librarian';
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch history data for charts
   useEffect(() => {
@@ -67,6 +62,30 @@ export default function Dashboard() {
 
     fetchHistoryData();
   }, [isLibrarian, getBorrowHistory]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        refetchBooks(),
+        refetchUsers(),
+        refetchBorrowRecords()
+      ]);
+      toast({
+        title: 'Data Refreshed',
+        description: 'Dashboard data has been updated successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to refresh data:', error);
+      toast({
+        title: 'Refresh Failed',
+        description: 'Failed to update dashboard data. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Show loading animation while data is being fetched
   const isAnyLoading = isLoadingBooks || isLoadingUsers || isLoadingBorrowRecords;
@@ -486,13 +505,24 @@ export default function Dashboard() {
         className="space-y-8"
       >
         {/* Header */}
-        <motion.div variants={itemVariants}>
-          <h1 className="text-3xl font-display font-bold">
-            Welcome back, {user?.name?.split(' ')[0]}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your borrowed books and explore our catalog
-          </p>
+        <motion.div variants={itemVariants} className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-display font-bold">
+              Welcome back, {user?.name?.split(' ')[0]}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Manage your borrowed books and explore our catalog
+            </p>
+          </div>
+          <Button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
         </motion.div>
 
         {/* Stats Grid */}

@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, Plus, Filter, BookOpen, Upload, X, Loader2 } from 'lucide-react';
+import { Search, Plus, Filter, BookOpen, Loader2, RefreshCw, Upload, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { Book } from '@/types/library';
@@ -56,8 +56,29 @@ export default function Books() {
 
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string>('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const isLibrarian = user?.role === 'librarian';
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refetchBooks();
+      toast({
+        title: 'Data Refreshed',
+        description: 'Books catalog has been updated successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to refresh data:', error);
+      toast({
+        title: 'Refresh Failed',
+        description: 'Failed to update books catalog. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Show loading animation while data is being fetched
   if (isLoadingBooks) {
@@ -356,12 +377,23 @@ export default function Books() {
               {isLibrarian ? 'Manage your library catalog' : 'Browse and borrow books'}
             </p>
           </div>
-          {isLibrarian && (
-            <Button variant="emerald" onClick={() => setIsAddDialogOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Add Book
+          <div className="flex gap-2">
+            <Button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
             </Button>
-          )}
+            {isLibrarian && (
+              <Button variant="emerald" onClick={() => setIsAddDialogOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Add Book
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Filters */}

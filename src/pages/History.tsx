@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Calendar, Clock, CheckCircle2, BookOpen, Search, Filter } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, BookOpen, Search, Filter, RefreshCw } from 'lucide-react';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
@@ -16,10 +16,56 @@ export default function History() {
   const [history, setHistory] = useState<BorrowRecord[]>([]);
   const [filteredHistory, setFilteredHistory] = useState<BorrowRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<'7days' | '30days' | '90days' | 'custom'>('30days');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      let fromDate: Date | undefined;
+      let toDate: Date | undefined;
+
+      switch (dateFilter) {
+        case '7days':
+          fromDate = subDays(new Date(), 7);
+          break;
+        case '30days':
+          fromDate = subDays(new Date(), 30);
+          break;
+        case '90days':
+          fromDate = subDays(new Date(), 90);
+          break;
+        case 'custom':
+          if (customStartDate) {
+            fromDate = new Date(customStartDate);
+          }
+          if (customEndDate) {
+            toDate = new Date(customEndDate);
+          }
+          break;
+      }
+
+      const historyData = await getBorrowHistory(fromDate, toDate);
+      setHistory(historyData);
+      setFilteredHistory(historyData);
+      toast({
+        title: 'Data Refreshed',
+        description: 'Your borrowing history has been updated successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to refresh history:', error);
+      toast({
+        title: 'Refresh Failed',
+        description: 'Failed to update borrowing history. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Fetch history data
   useEffect(() => {
@@ -112,6 +158,15 @@ export default function History() {
             <h1 className="text-3xl font-display font-bold">Borrowing History</h1>
             <p className="text-muted-foreground">View your complete borrowing history</p>
           </div>
+          <Button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
         </div>
 
         {/* Filters */}

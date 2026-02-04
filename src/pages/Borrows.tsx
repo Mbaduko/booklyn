@@ -3,22 +3,44 @@ import { useLibrary } from '@/contexts/LibraryContext';
 import { Layout } from '@/components/Layout';
 import { BorrowCard } from '@/components/BorrowCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookOpen, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BookOpen, Loader2, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 
 export default function Borrows() {
   const { user } = useAuth();
-  const { borrowRecords, getBookById, getUserById, getBorrowStatus, confirmPickup, confirmReturn, isLoadingBorrowRecords } = useLibrary();
+  const { borrowRecords, getBookById, getUserById, getBorrowStatus, confirmPickup, confirmReturn, isLoadingBorrowRecords, refetchBorrowRecords } = useLibrary();
 
   const isLibrarian = user?.role === 'librarian';
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const activeRecords = borrowRecords.filter(r => r.status !== 'returned' && r.status !== 'expired');
   const reservedRecords = activeRecords.filter(r => r.status === 'reserved');
   const borrowedRecords = activeRecords.filter(r => r.status === 'borrowed' || getBorrowStatus(r) === 'due_soon');
   const overdueRecords = activeRecords.filter(r => getBorrowStatus(r) === 'overdue');
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refetchBorrowRecords();
+      toast({
+        title: 'Data Refreshed',
+        description: 'Borrow records have been updated successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to refresh data:', error);
+      toast({
+        title: 'Refresh Failed',
+        description: 'Failed to update borrow records. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Show loading animation while data is being fetched
   if (isLoadingBorrowRecords) {
@@ -113,9 +135,20 @@ export default function Borrows() {
   return (
     <Layout>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-display font-bold">Borrowing Management</h1>
-          <p className="text-muted-foreground mt-1">Track and manage all book borrowings</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-display font-bold">Borrowing Management</h1>
+            <p className="text-muted-foreground mt-1">Track and manage all book borrowings</p>
+          </div>
+          <Button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
         </div>
 
         <Tabs defaultValue="pending">
