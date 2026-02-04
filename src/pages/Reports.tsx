@@ -435,6 +435,7 @@ export default function Reports() {
     // Function to draw table row
     const drawTableRow = (y: number, data: string[], isHeader: boolean = false) => {
       let x = margin;
+      let maxLinesInRow = 1; // Track the maximum number of lines in this row
       
       // Draw row background for header - fill entire row first
       if (isHeader) {
@@ -450,19 +451,9 @@ export default function Reports() {
         pdf.setTextColor(0, 0, 0); // Black text for data rows
       }
       
-      // Draw cell borders and text
-      data.forEach((text, index) => {
+      // First pass: calculate wrapped text for all cells to determine max lines
+      const cellTexts = data.map((text, index) => {
         const width = colWidths[index];
-        
-        if (isHeader) {
-          pdf.setFont(undefined, 'bold');
-          pdf.setFontSize(8); // Increased from 6pt to 8pt
-        } else {
-          pdf.setFont(undefined, 'normal');
-          pdf.setFontSize(7); // Increased from 5pt to 7pt
-        }
-        
-        // Text wrapping logic
         const maxLineWidth = width - 2; // 2mm padding
         const words = text.split(' ');
         let lines = [];
@@ -483,19 +474,48 @@ export default function Reports() {
           lines.push(currentLine);
         }
         
-        // Draw wrapped text
-        const lineHeight = 3; // Line height in mm
-        const startY = y - (lines.length - 1) * lineHeight / 2;
-        
-        lines.forEach((line, lineIndex) => {
-          pdf.text(line, x + 1, startY + (lineIndex * lineHeight));
-        });
-        
-        // Draw cell border after text to ensure it's visible
-        pdf.setDrawColor(200, 200, 200);
-        pdf.rect(x, y - 4, width, rowHeight);
+        maxLinesInRow = Math.max(maxLinesInRow, lines.length);
+        return lines;
+      });
+      
+      // Calculate dynamic row height based on content
+      const dynamicRowHeight = Math.max(rowHeight, 4 + (maxLinesInRow - 1) * 2.5); // Minimum 4mm + 2.5mm per additional line
+      
+      // Draw cell borders with dynamic height
+      data.forEach((text, index) => {
+        const width = colWidths[index];
+        pdf.rect(x, y - 4, width, dynamicRowHeight);
         x += width;
       });
+      
+      // Second pass: draw text
+      x = margin;
+      data.forEach((text, index) => {
+        const width = colWidths[index];
+        const lines = cellTexts[index];
+        
+        if (isHeader) {
+          pdf.setFont(undefined, 'bold');
+          pdf.setFontSize(8); // Increased from 6pt to 8pt
+        } else {
+          pdf.setFont(undefined, 'normal');
+          pdf.setFontSize(7); // Increased from 5pt to 7pt
+        }
+        
+        // Draw wrapped text within cell boundaries
+        const lineHeight = 2.5; // Line height in mm
+        const startY = y - 2; // Start from top of cell
+        const totalTextHeight = lines.length * lineHeight;
+        const firstLineY = startY + (dynamicRowHeight - totalTextHeight) / 2; // Center vertically
+        
+        lines.forEach((line, lineIndex) => {
+          pdf.text(line, x + 1, firstLineY + (lineIndex * lineHeight));
+        });
+        
+        x += width;
+      });
+      
+      return dynamicRowHeight; // Return the actual row height used
     };
     
     // Draw table headers
@@ -507,7 +527,7 @@ export default function Reports() {
       const book = getBookById(record.bookId);
       
       // Check if we need a new page
-      if (currentY > pageHeight - rowHeight) {
+      if (currentY > pageHeight - 20) { // Leave more space for potential tall rows
         pdf.addPage();
         currentY = 20;
         
@@ -532,15 +552,15 @@ export default function Reports() {
         record.user?.name || 'Unknown',
         record.user?.email || 'Unknown',
         record.status,
-        format(record.reservedAt, 'yyyy/MM/dd'),
-        record.reservationExpiresAt ? format(record.reservationExpiresAt, 'yyyy/MM/dd') : '',
-        record.pickupDate ? format(record.pickupDate, 'yyyy/MM/dd') : '',
-        record.dueDate ? format(record.dueDate, 'yyyy/MM/dd') : '',
-        record.returnDate ? format(record.returnDate, 'yyyy/MM/dd') : ''
+        format(record.reservedAt, 'yyyy/MM/dd HH:mm'),
+        record.reservationExpiresAt ? format(record.reservationExpiresAt, 'yyyy/MM/dd HH:mm') : '',
+        record.pickupDate ? format(record.pickupDate, 'yyyy/MM/dd HH:mm') : '',
+        record.dueDate ? format(record.dueDate, 'yyyy/MM/dd HH:mm') : '',
+        record.returnDate ? format(record.returnDate, 'yyyy/MM/dd HH:mm') : ''
       ];
       
-      drawTableRow(currentY, rowData, false);
-      currentY += rowHeight;
+      const actualRowHeight = drawTableRow(currentY, rowData, false);
+      currentY += actualRowHeight;
     });
     
     // Add professional footer
