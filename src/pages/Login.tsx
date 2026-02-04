@@ -61,24 +61,7 @@ export default function Login() {
     setIsLoading(false);
   };
 
-  const handleDemoLogin = async (role: 'librarian' | 'client') => {
-    setIsLoading(true);
-    const credentials = role === 'librarian' 
-      ? { email: 'librarian@library.com', password: 'password123' }
-      : { email: 'mbadukosupersonic@gmail.com', password: 'password123' };
-    
-    const success = await login(credentials.email, credentials.password);
-    
-    if (success) {
-      toast({
-        title: 'Welcome!',
-        description: `Logged in as ${role}.`,
-      });
-      navigate('/dashboard');
-    }
-    setIsLoading(false);
-  };
-
+  
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Decorative */}
@@ -230,44 +213,6 @@ export default function Login() {
                   )}
                 </Button>
               </form>
-
-              {isLogin && (
-                <>
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-border" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">
-                        Quick demo access
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={() => handleDemoLogin('librarian')}
-                      disabled={isLoading}
-                      className="text-sm"
-                    >
-                      Librarian Demo
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleDemoLogin('client')}
-                      disabled={isLoading}
-                      className="text-sm"
-                    >
-                      Client Demo
-                    </Button>
-                  </div>
-
-                  <p className="text-center text-sm text-muted-foreground mt-6">
-                    Demo credentials: any email above with password <code className="bg-muted px-1 py-0.5 rounded text-xs">password123</code>
-                  </p>
-                </>
-              )}
 
               <div className="text-center mt-6">
                 <p className="text-sm text-muted-foreground">
