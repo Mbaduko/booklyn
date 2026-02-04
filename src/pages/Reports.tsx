@@ -427,7 +427,7 @@ export default function Reports() {
     const pageHeight = 190;
     const margin = 20;
     const tableWidth = 262;
-    const colWidths = [10, 45, 30, 20, 25, 40, 15, 25, 25, 25, 25, 25];
+    const colWidths = [8, 42, 28, 16, 20, 35, 12, 20, 20, 20, 20, 21]; // Optimized to use full width
     const headers = ['No.', 'Title', 'Author', 'Category', 'User', 'Email', 'Status', 'Reserved', 'Expires', 'Picked Up', 'Due', 'Returned'];
     
     let currentY = tableStartY;
@@ -454,19 +454,19 @@ export default function Reports() {
       data.forEach((text, index) => {
         const width = colWidths[index];
         
-        // Add text (truncate if too long)
-        const maxLength = Math.floor(width / 2.5); // Approximate character limit based on width
+        // Add text (truncate if too long) - more aggressive truncation
+        const maxLength = Math.floor(width / 3.5); // Further reduced character limit
         const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
         
         if (isHeader) {
           pdf.setFont(undefined, 'bold');
-          pdf.setFontSize(8);
+          pdf.setFontSize(6); // Further reduced from 7pt to 6pt
         } else {
           pdf.setFont(undefined, 'normal');
-          pdf.setFontSize(7);
+          pdf.setFontSize(5); // Further reduced from 6pt to 5pt
         }
         
-        pdf.text(truncatedText, x + 1, y);
+        pdf.text(truncatedText, x + 0.5, y); // Reduced padding
         
         // Draw cell border after text to ensure it's visible
         pdf.setDrawColor(200, 200, 200);
