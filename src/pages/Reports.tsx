@@ -180,6 +180,26 @@ export default function Reports() {
       alignment: { horizontal: 'center' }
     };
     
+    // Style section titles (SUMMARY and DETAILED RECORDS)
+    wsSummary['A6'].s = {
+      font: { sz: 14, bold: true },
+      fill: { fgColor: { rgb: 'FF22705E' } }
+    };
+    
+    wsSummary['A13'].s = {
+      font: { sz: 14, bold: true },
+      fill: { fgColor: { rgb: 'FF22705E' } }
+    };
+    
+    // Style summary labels
+    wsSummary['A3'].s = { font: { bold: true } };
+    wsSummary['A4'].s = { font: { bold: true } };
+    wsSummary['A7'].s = { font: { bold: true } };
+    wsSummary['A8'].s = { font: { bold: true } };
+    wsSummary['A9'].s = { font: { bold: true } };
+    wsSummary['A10'].s = { font: { bold: true } };
+    wsSummary['A11'].s = { font: { bold: true } };
+    
     // Merge title cell
     wsSummary['!merges'] = [
       { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }
@@ -187,7 +207,7 @@ export default function Reports() {
     
     // Set column widths for summary
     wsSummary['!cols'] = [
-      { wch: 20 }, // Column A
+      { wch: 25 }, // Column A
       { wch: 30 }  // Column B
     ];
     
@@ -230,27 +250,59 @@ export default function Reports() {
     const detailData = [headers, ...rows];
     const wsDetails = XLSX.utils.aoa_to_sheet(detailData);
     
-    // Style the headers
+    // Style the headers with enhanced formatting
     const headerRange = XLSX.utils.decode_range(wsDetails['!ref'] || 'A1');
     for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
       const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
       if (wsDetails[cellAddress]) {
         wsDetails[cellAddress].s = {
-          font: { bold: true },
-          fill: { fgColor: { rgb: 'FF22705E' } },
-          alignment: { horizontal: 'center' }
+          font: { 
+            bold: true,
+            sz: 12
+          },
+          fill: { 
+            fgColor: { rgb: 'FF22705E' } 
+          },
+          alignment: { 
+            horizontal: 'center',
+            vertical: 'center'
+          },
+          border: {
+            top: { style: 'thin', color: { auto: 1 } },
+            bottom: { style: 'thin', color: { auto: 1 } },
+            left: { style: 'thin', color: { auto: 1 } },
+            right: { style: 'thin', color: { auto: 1 } }
+          }
+        };
+      }
+    }
+    
+    // Add borders to all data cells
+    for (let row = 1; row <= data.length; row++) {
+      for (let col = 0; col <= headerRange.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+        if (!wsDetails[cellAddress]) {
+          wsDetails[cellAddress] = { t: 's', v: '' };
+        }
+        wsDetails[cellAddress].s = {
+          border: {
+            top: { style: 'thin', color: { auto: 1 } },
+            bottom: { style: 'thin', color: { auto: 1 } },
+            left: { style: 'thin', color: { auto: 1 } },
+            right: { style: 'thin', color: { auto: 1 } }
+          }
         };
       }
     }
     
     // Set column widths for details
     wsDetails['!cols'] = [
-      { wch: 5 },   // No.
-      { wch: 30 },  // Book Title
+      { wch: 6 },   // No.
+      { wch: 35 },  // Book Title
       { wch: 25 },  // Book Author
       { wch: 15 },  // Book Category
       { wch: 20 },  // User Name
-      { wch: 30 },  // User Email
+      { wch: 35 },  // User Email
       { wch: 12 },  // Status
       { wch: 20 },  // Reserved At
       { wch: 20 },  // Reservation Expires At
@@ -259,87 +311,129 @@ export default function Reports() {
       { wch: 20 }   // Return Date
     ];
     
+    // Set row height for header
+    wsDetails['!rows'] = [
+      { hpt: 25 }  // Header row height
+    ];
+    
     XLSX.utils.book_append_sheet(wb, wsDetails, 'Detailed Records');
     
     return wb;
   };
 
   const generatePDF = (data: any[], startDate: Date, endDate: Date) => {
-    const pdf = new jsPDF();
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
     
     // Add title
     pdf.setFontSize(20);
-    pdf.text('BORROWING HISTORY REPORT', 105, 20, { align: 'center' });
+    pdf.text('BORROWING HISTORY REPORT', 148, 15, { align: 'center' });
     
     // Add date range
     pdf.setFontSize(12);
-    pdf.text(`Date Range: ${format(startDate, 'yyyy/MM/dd')} - ${format(endDate, 'yyyy/MM/dd')}`, 105, 30, { align: 'center' });
-    pdf.text(`Total Records: ${data.length}`, 105, 37, { align: 'center' });
+    pdf.text(`Date Range: ${format(startDate, 'yyyy/MM/dd')} - ${format(endDate, 'yyyy/MM/dd')}`, 148, 25, { align: 'center' });
+    pdf.text(`Total Records: ${data.length}`, 148, 32, { align: 'center' });
     
     // Add summary section
     pdf.setFontSize(14);
-    pdf.text('SUMMARY:', 20, 55);
+    pdf.text('SUMMARY:', 20, 45);
     pdf.setFontSize(11);
-    pdf.text(`Total Borrows: ${data.length}`, 20, 65);
-    pdf.text(`Returned: ${data.filter(r => r.status === 'returned').length}`, 20, 72);
-    pdf.text(`Active: ${data.filter(r => r.status === 'borrowed' || r.status === 'due_soon' || r.status === 'overdue').length}`, 20, 79);
-    pdf.text(`Overdue: ${data.filter(r => r.status === 'overdue').length}`, 20, 86);
-    pdf.text(`Expired: ${data.filter(r => r.status === 'expired').length}`, 20, 93);
+    pdf.text(`Total Borrows: ${data.length}`, 20, 52);
+    pdf.text(`Returned: ${data.filter(r => r.status === 'returned').length}`, 20, 59);
+    pdf.text(`Active: ${data.filter(r => r.status === 'borrowed' || r.status === 'due_soon' || r.status === 'overdue').length}`, 20, 66);
+    pdf.text(`Overdue: ${data.filter(r => r.status === 'overdue').length}`, 20, 73);
+    pdf.text(`Expired: ${data.filter(r => r.status === 'expired').length}`, 20, 80);
     
     // Add detailed records section
     pdf.setFontSize(14);
-    pdf.text('DETAILED RECORDS:', 20, 110);
+    pdf.text('DETAILED RECORDS:', 20, 95);
     
-    let yPosition = 120;
-    pdf.setFontSize(10);
+    // Table setup for landscape
+    const tableStartY = 105;
+    const rowHeight = 7;
+    const pageHeight = 190;
+    const margin = 15;
+    const tableWidth = 267;
+    const colWidths = [10, 45, 30, 20, 25, 40, 15, 25, 25, 25, 25, 25];
+    const headers = ['No.', 'Title', 'Author', 'Category', 'User', 'Email', 'Status', 'Reserved', 'Expires', 'Picked Up', 'Due', 'Returned'];
     
+    let currentY = tableStartY;
+    
+    // Function to draw table row
+    const drawTableRow = (y: number, data: string[], isHeader: boolean = false) => {
+      let x = margin;
+      
+      // Draw row background for header - fill entire row first
+      if (isHeader) {
+        pdf.setFillColor(34, 112, 94); // Green color matching dashboard
+        pdf.rect(margin, y - 4, tableWidth, rowHeight, 'F');
+        pdf.setTextColor(255, 255, 255); // White text for header
+      } else {
+        pdf.setTextColor(0, 0, 0); // Black text for data rows
+      }
+      
+      // Draw cell borders and text
+      data.forEach((text, index) => {
+        const width = colWidths[index];
+        
+        // Add text (truncate if too long)
+        const maxLength = Math.floor(width / 2.5); // Approximate character limit based on width
+        const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        
+        if (isHeader) {
+          pdf.setFont(undefined, 'bold');
+          pdf.setFontSize(8);
+        } else {
+          pdf.setFont(undefined, 'normal');
+          pdf.setFontSize(7);
+        }
+        
+        pdf.text(truncatedText, x + 1, y);
+        
+        // Draw cell border after text to ensure it's visible
+        pdf.rect(x, y - 4, width, rowHeight);
+        x += width;
+      });
+    };
+    
+    // Draw table headers
+    drawTableRow(currentY, headers, true);
+    currentY += rowHeight;
+    
+    // Draw table data rows
     data.forEach((record, index) => {
       const book = getBookById(record.bookId);
       
       // Check if we need a new page
-      if (yPosition > 270) {
+      if (currentY > pageHeight - rowHeight) {
         pdf.addPage();
-        yPosition = 20;
+        currentY = 20;
+        
+        // Redraw headers on new page
+        drawTableRow(currentY, headers, true);
+        currentY += rowHeight;
       }
       
-      // Add record details
-      pdf.setFont(undefined, 'bold');
-      pdf.text(`${index + 1}. ${book?.title || 'Unknown'}`, 20, yPosition);
-      yPosition += 7;
+      const rowData = [
+        (index + 1).toString(),
+        book?.title || 'Unknown',
+        book?.author || 'Unknown',
+        book?.category || 'Unknown',
+        record.user?.name || 'Unknown',
+        record.user?.email || 'Unknown',
+        record.status,
+        format(record.reservedAt, 'yyyy/MM/dd'),
+        record.reservationExpiresAt ? format(record.reservationExpiresAt, 'yyyy/MM/dd') : '',
+        record.pickupDate ? format(record.pickupDate, 'yyyy/MM/dd') : '',
+        record.dueDate ? format(record.dueDate, 'yyyy/MM/dd') : '',
+        record.returnDate ? format(record.returnDate, 'yyyy/MM/dd') : ''
+      ];
       
-      pdf.setFont(undefined, 'normal');
-      pdf.text(`   Author: ${book?.author || 'Unknown'}`, 20, yPosition);
-      yPosition += 6;
-      pdf.text(`   Category: ${book?.category || 'Unknown'}`, 20, yPosition);
-      yPosition += 6;
-      pdf.text(`   User: ${record.user?.name || 'Unknown'} (${record.user?.email || 'Unknown'})`, 20, yPosition);
-      yPosition += 6;
-      pdf.text(`   Status: ${record.status}`, 20, yPosition);
-      yPosition += 6;
-      pdf.text(`   Reserved: ${format(record.reservedAt, 'yyyy/MM/dd HH:mm')}`, 20, yPosition);
-      yPosition += 6;
-      
-      if (record.reservationExpiresAt) {
-        pdf.text(`   Expires: ${format(record.reservationExpiresAt, 'yyyy/MM/dd HH:mm')}`, 20, yPosition);
-        yPosition += 6;
-      }
-      
-      if (record.pickupDate) {
-        pdf.text(`   Picked up: ${format(record.pickupDate, 'yyyy/MM/dd HH:mm')}`, 20, yPosition);
-        yPosition += 6;
-      }
-      
-      if (record.dueDate) {
-        pdf.text(`   Due: ${format(record.dueDate, 'yyyy/MM/dd HH:mm')}`, 20, yPosition);
-        yPosition += 6;
-      }
-      
-      if (record.returnDate) {
-        pdf.text(`   Returned: ${format(record.returnDate, 'yyyy/MM/dd HH:mm')}`, 20, yPosition);
-        yPosition += 6;
-      }
-      
-      yPosition += 4; // Add space between records
+      drawTableRow(currentY, rowData, false);
+      currentY += rowHeight;
     });
     
     return pdf;
