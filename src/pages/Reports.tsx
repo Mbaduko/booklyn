@@ -328,35 +328,105 @@ export default function Reports() {
       format: 'a4'
     });
     
-    // Add title
-    pdf.setFontSize(20);
-    pdf.text('BORROWING HISTORY REPORT', 148, 15, { align: 'center' });
+    // Add professional header with branding
+    pdf.setFillColor(34, 112, 94); // Brand green color
+    pdf.rect(0, 0, 297, 12, 'F'); // Header bar
     
-    // Add date range
+    pdf.setTextColor(255, 255, 255); // White text for header
+    pdf.setFontSize(10);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('Booklyn Library Management System', 148, 8, { align: 'center' });
+    
+    // Add decorative line
+    pdf.setDrawColor(34, 112, 94);
+    pdf.setLineWidth(0.5);
+    pdf.line(15, 15, 282, 15);
+    
+    // Main title with enhanced styling
+    pdf.setTextColor(0, 0, 0); // Black text for main content
+    pdf.setFontSize(24);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('BORROWING HISTORY REPORT', 148, 25, { align: 'center' });
+    
+    // Subtitle with date range
     pdf.setFontSize(12);
-    pdf.text(`Date Range: ${format(startDate, 'yyyy/MM/dd')} - ${format(endDate, 'yyyy/MM/dd')}`, 148, 25, { align: 'center' });
-    pdf.text(`Total Records: ${data.length}`, 148, 32, { align: 'center' });
+    pdf.setFont(undefined, 'normal');
+    pdf.setTextColor(100, 100, 100); // Gray text for subtitle
+    pdf.text(`Period: ${format(startDate, 'MMMM dd, yyyy')} - ${format(endDate, 'MMMM dd, yyyy')}`, 148, 33, { align: 'center' });
     
-    // Add summary section
-    pdf.setFontSize(14);
-    pdf.text('SUMMARY:', 20, 45);
+    // Report metadata
+    pdf.setFontSize(10);
+    pdf.text(`Generated on: ${format(new Date(), 'MMMM dd, yyyy HH:mm')}`, 148, 40, { align: 'center' });
+    pdf.text(`Total Records: ${data.length}`, 148, 46, { align: 'center' });
+    
+    // Add another decorative line
+    pdf.setDrawColor(200, 200, 200);
+    pdf.line(15, 52, 282, 52);
+    
+    // Enhanced summary section with professional layout
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(16);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('EXECUTIVE SUMMARY', 20, 65);
+    
+    // Summary statistics in a professional box
+    const summaryBoxY = 72;
+    const summaryBoxHeight = 35;
+    
+    // Draw summary box background
+    pdf.setFillColor(248, 248, 248); // Light gray background
+    pdf.rect(20, summaryBoxY, 262, summaryBoxHeight, 'F');
+    
+    // Draw summary box border
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(1);
+    pdf.rect(20, summaryBoxY, 262, summaryBoxHeight);
+    
+    // Summary statistics with labels
     pdf.setFontSize(11);
-    pdf.text(`Total Borrows: ${data.length}`, 20, 52);
-    pdf.text(`Returned: ${data.filter(r => r.status === 'returned').length}`, 20, 59);
-    pdf.text(`Active: ${data.filter(r => r.status === 'borrowed' || r.status === 'due_soon' || r.status === 'overdue').length}`, 20, 66);
-    pdf.text(`Overdue: ${data.filter(r => r.status === 'overdue').length}`, 20, 73);
-    pdf.text(`Expired: ${data.filter(r => r.status === 'expired').length}`, 20, 80);
+    pdf.setFont(undefined, 'bold');
+    pdf.setTextColor(34, 112, 94); // Brand color for labels
     
-    // Add detailed records section
-    pdf.setFontSize(14);
-    pdf.text('DETAILED RECORDS:', 20, 95);
+    const summaryData = [
+      { label: 'Total Borrows:', value: data.length.toString() },
+      { label: 'Returned:', value: data.filter(r => r.status === 'returned').length.toString() },
+      { label: 'Active:', value: data.filter(r => r.status === 'borrowed' || r.status === 'due_soon' || r.status === 'overdue').length.toString() },
+      { label: 'Overdue:', value: data.filter(r => r.status === 'overdue').length.toString() },
+      { label: 'Expired:', value: data.filter(r => r.status === 'expired').length.toString() }
+    ];
+    
+    // Position summary items in a grid
+    summaryData.forEach((item, index) => {
+      const col = index % 3;
+      const row = Math.floor(index / 3);
+      const x = 30 + (col * 85);
+      const y = summaryBoxY + 10 + (row * 12);
+      
+      pdf.text(item.label, x, y);
+      pdf.setFont(undefined, 'normal');
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(item.value, x + 50, y);
+      pdf.setFont(undefined, 'bold');
+      pdf.setTextColor(34, 112, 94);
+    });
+    
+    // Add detailed records section with enhanced styling
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(16);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('DETAILED RECORDS', 20, 120);
+    
+    // Add decorative line before table
+    pdf.setDrawColor(34, 112, 94);
+    pdf.setLineWidth(0.5);
+    pdf.line(20, 125, 282, 125);
     
     // Table setup for landscape
-    const tableStartY = 105;
+    const tableStartY = 135;
     const rowHeight = 7;
     const pageHeight = 190;
-    const margin = 15;
-    const tableWidth = 267;
+    const margin = 20;
+    const tableWidth = 262;
     const colWidths = [10, 45, 30, 20, 25, 40, 15, 25, 25, 25, 25, 25];
     const headers = ['No.', 'Title', 'Author', 'Category', 'User', 'Email', 'Status', 'Reserved', 'Expires', 'Picked Up', 'Due', 'Returned'];
     
@@ -368,10 +438,15 @@ export default function Reports() {
       
       // Draw row background for header - fill entire row first
       if (isHeader) {
-        pdf.setFillColor(34, 112, 94); // Green color matching dashboard
-        pdf.rect(margin, y - 4, tableWidth, rowHeight, 'F');
+        pdf.setFillColor(34, 112, 94); // Brand green color
+        pdf.rect(margin, y - 4, tableWidth, rowHeight, 'F'); // Use full tableWidth (262mm)
         pdf.setTextColor(255, 255, 255); // White text for header
       } else {
+        // Alternate row colors for better readability
+        if (Math.floor((y - tableStartY) / rowHeight) % 2 === 0) {
+          pdf.setFillColor(248, 248, 248); // Light gray for even rows
+          pdf.rect(margin, y - 4, tableWidth, rowHeight, 'F'); // Use full tableWidth (262mm)
+        }
         pdf.setTextColor(0, 0, 0); // Black text for data rows
       }
       
@@ -394,6 +469,7 @@ export default function Reports() {
         pdf.text(truncatedText, x + 1, y);
         
         // Draw cell border after text to ensure it's visible
+        pdf.setDrawColor(200, 200, 200);
         pdf.rect(x, y - 4, width, rowHeight);
         x += width;
       });
@@ -411,6 +487,14 @@ export default function Reports() {
       if (currentY > pageHeight - rowHeight) {
         pdf.addPage();
         currentY = 20;
+        
+        // Add header to new page
+        pdf.setFillColor(34, 112, 94);
+        pdf.rect(0, 0, 297, 12, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(10);
+        pdf.setFont(undefined, 'bold');
+        pdf.text('Booklyn Library Management System', 148, 8, { align: 'center' });
         
         // Redraw headers on new page
         drawTableRow(currentY, headers, true);
@@ -435,6 +519,20 @@ export default function Reports() {
       drawTableRow(currentY, rowData, false);
       currentY += rowHeight;
     });
+    
+    // Add professional footer
+    const pageCount = pdf.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      pdf.setPage(i);
+      pdf.setFillColor(34, 112, 94);
+      pdf.rect(0, 198, 297, 12, 'F'); // Footer bar
+      
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(8);
+      pdf.setFont(undefined, 'normal');
+      pdf.text('Confidential - Library Management Report', 148, 204, { align: 'center' });
+      pdf.text(`Page ${i} of ${pageCount}`, 280, 204, { align: 'right' });
+    }
     
     return pdf;
   };
