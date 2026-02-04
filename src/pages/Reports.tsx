@@ -8,16 +8,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { BookOpen, Users, TrendingUp, Clock, BarChart3, Book, Download, Calendar, FileText, FileSpreadsheet } from 'lucide-react';
+import { BookOpen, Users, TrendingUp, Clock, BarChart3, Book, Download, Calendar, FileText, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { useState, useEffect } from 'react';
 import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
+import { motion } from 'framer-motion';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
 export default function Reports() {
-  const { books, users, borrowRecords, getBookById, getBorrowHistory } = useLibrary();
+  const { books, users, borrowRecords, getBookById, getBorrowHistory, isLoadingBooks, isLoadingUsers, isLoadingBorrowRecords } = useLibrary();
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
@@ -48,6 +49,51 @@ export default function Reports() {
 
     fetchHistoryData();
   }, [getBorrowHistory]);
+
+  // Show loading animation while data is being fetched
+  const isAnyLoading = isLoadingBooks || isLoadingUsers || isLoadingBorrowRecords;
+  
+  if (isAnyLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center gap-4"
+          >
+            <Loader2 className="h-12 w-12 animate-spin text-[#22705e]" />
+            <p className="text-lg font-medium text-gray-600">Loading reports...</p>
+            <p className="text-sm text-gray-500">Please wait while we fetch the latest data</p>
+          </motion.div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show empty state if no data is available
+  const hasData = books.length > 0 || users.length > 0 || borrowRecords.length > 0;
+  
+  if (!hasData) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center gap-4"
+          >
+            <div className="text-6xl">📊</div>
+            <p className="text-lg font-medium text-gray-600">No data available for reports</p>
+            <p className="text-sm text-gray-500">There are no books, users, or borrow records to generate reports</p>
+            <Button onClick={() => window.location.reload()} className="mt-4">
+              Refresh Page
+            </Button>
+          </motion.div>
+        </div>
+      </Layout>
+    );
+  }
 
   // Books Stats Data
   const categoryData = books.reduce((acc, book) => {

@@ -10,7 +10,7 @@ import { toast } from '@/hooks/use-toast';
 
 export default function Borrows() {
   const { user } = useAuth();
-  const { borrowRecords, getBookById, getUserById, getBorrowStatus, confirmPickup, confirmReturn } = useLibrary();
+  const { borrowRecords, getBookById, getUserById, getBorrowStatus, confirmPickup, confirmReturn, isLoadingBorrowRecords } = useLibrary();
 
   const isLibrarian = user?.role === 'librarian';
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -19,6 +19,25 @@ export default function Borrows() {
   const reservedRecords = activeRecords.filter(r => r.status === 'reserved');
   const borrowedRecords = activeRecords.filter(r => r.status === 'borrowed' || getBorrowStatus(r) === 'due_soon');
   const overdueRecords = activeRecords.filter(r => getBorrowStatus(r) === 'overdue');
+
+  // Show loading animation while data is being fetched
+  if (isLoadingBorrowRecords) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center gap-4"
+          >
+            <Loader2 className="h-12 w-12 animate-spin text-[#22705e]" />
+            <p className="text-lg font-medium text-gray-600">Loading borrow records...</p>
+            <p className="text-sm text-gray-500">Please wait while we fetch the latest data</p>
+          </motion.div>
+        </div>
+      </Layout>
+    );
+  }
 
   const handleConfirmPickup = async (recordId: string) => {
     setLoadingId(recordId);

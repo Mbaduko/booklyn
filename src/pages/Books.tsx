@@ -32,7 +32,7 @@ import { format, isToday, isTomorrow, formatDistanceToNow } from 'date-fns';
 
 export default function Books() {
   const { user } = useAuth();
-  const { books, refetchBooks, reserveBook } = useLibrary();
+  const { books, refetchBooks, reserveBook, isLoadingBooks } = useLibrary();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -43,7 +43,67 @@ export default function Books() {
   const [isReserving, setIsReserving] = useState(false);
   const [reservingBookId, setReservingBookId] = useState<string | null>(null);
 
+  // Additional state hooks that were after early returns - MOVED TO TOP
+  const [formData, setFormData] = useState({
+    title: '',
+    author: '',
+    category: '',
+    isbn: '',
+    totalCopies: 1,
+    description: '',
+    publishedYear: new Date().getFullYear(),
+  });
+
+  const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string>('');
+
   const isLibrarian = user?.role === 'librarian';
+
+  // Show loading animation while data is being fetched
+  if (isLoadingBooks) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center gap-4"
+          >
+            <Loader2 className="h-12 w-12 animate-spin text-[#22705e]" />
+            <p className="text-lg font-medium text-gray-600">Loading books...</p>
+            <p className="text-sm text-gray-500">Please wait while we fetch the library catalog</p>
+          </motion.div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show empty state if no books are available
+  if (!books || books.length === 0) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center gap-4"
+          >
+            <div className="text-6xl">📚</div>
+            <p className="text-lg font-medium text-gray-600">No books available</p>
+            <p className="text-sm text-gray-500">There are no books in the library catalog</p>
+            {isLibrarian && (
+              <Button onClick={() => setIsAddDialogOpen(true)} className="mt-4">
+                Add First Book
+              </Button>
+            )}
+            <Button onClick={() => window.location.reload()} variant="outline" className="mt-2">
+              Refresh Page
+            </Button>
+          </motion.div>
+        </div>
+      </Layout>
+    );
+  }
 
   // Helper function to format pickup deadline in a user-friendly way
   const formatPickupDeadline = (expirationDate: Date): string => {
@@ -103,19 +163,6 @@ export default function Books() {
     const matchesCategory = categoryFilter === 'all' || book.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
-
-  const [formData, setFormData] = useState({
-    title: '',
-    author: '',
-    category: '',
-    isbn: '',
-    totalCopies: 1,
-    description: '',
-    publishedYear: new Date().getFullYear(),
-  });
-
-  const [coverImage, setCoverImage] = useState<File | null>(null);
-  const [coverImagePreview, setCoverImagePreview] = useState<string>('');
 
   const handleAddBook = async () => {
     if (!isLibrarian) return;
