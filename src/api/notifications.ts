@@ -54,6 +54,51 @@ export async function getNotifications(userId: string): Promise<Notification[]> 
     throw new Error('Failed to parse response data');
   }
   
-  // Convert API response to frontend types
-  return Array.isArray(data) ? data.map(convertAPIToFrontend) : [];
+  // Convert API response to frontend types and sort from newest to oldest
+  const notifications = Array.isArray(data) ? data.map(convertAPIToFrontend) : [];
+  return notifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+export async function markNotificationAsRead(notificationId: string): Promise<Notification> {
+  if (!notificationId) {
+    throw new Error('notificationId is required');
+  }
+
+  const res = await fetch(`${API_BASE_URL}/notifications/${notificationId}/read`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    let error;
+    try {
+      error = await res.json();
+    } catch {
+      error = {};
+    }
+    throw new Error(error.error || 'Failed to mark notification as read');
+  }
+  
+  const data = await res.json();
+  return convertAPIToFrontend(data.notification);
+}
+
+export async function markAllNotificationsAsRead(): Promise<{ count: number }> {
+  const res = await fetch(`${API_BASE_URL}/notifications/read-all`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    let error;
+    try {
+      error = await res.json();
+    } catch {
+      error = {};
+    }
+    throw new Error(error.error || 'Failed to mark all notifications as read');
+  }
+  
+  const data = await res.json();
+  return { count: data.count };
 }

@@ -1,5 +1,5 @@
 import { Notification } from '@/types/library';
-import { Bell, Info, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { Bell, Info, AlertTriangle, CheckCircle, XCircle, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,13 +10,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
+import { useState } from 'react';
+import { toast } from '@/hooks/use-toast';
 
 interface NotificationBellProps {
   notifications: Notification[];
   onMarkRead: (id: string) => void;
+  onMarkAllRead: () => void;
+  isLoading?: boolean;
 }
 
-export function NotificationBell({ notifications, onMarkRead }: NotificationBellProps) {
+export function NotificationBell({ notifications, onMarkRead, onMarkAllRead, isLoading = false }: NotificationBellProps) {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const getIcon = (type: Notification['type']) => {
@@ -29,6 +33,22 @@ export function NotificationBell({ notifications, onMarkRead }: NotificationBell
         return <CheckCircle className="h-4 w-4 text-success" />;
       case 'error':
         return <XCircle className="h-4 w-4 text-destructive" />;
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await onMarkAllRead();
+      toast({
+        title: 'All notifications marked as read',
+        description: `${unreadCount} notifications have been marked as read.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Failed to mark all as read',
+        description: error instanceof Error ? error.message : 'An error occurred',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -53,6 +73,20 @@ export function NotificationBell({ notifications, onMarkRead }: NotificationBell
             </span>
           )}
         </div>
+        {unreadCount > 0 && (
+          <div className="px-4 py-2 border-b border-border">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleMarkAllRead}
+              disabled={isLoading}
+              className="w-full justify-start text-xs"
+            >
+              <CheckCheck className="h-3 w-3 mr-2" />
+              {isLoading ? 'Marking all as read...' : 'Mark all as read'}
+            </Button>
+          </div>
+        )}
         <ScrollArea className="h-[300px]">
           {notifications.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground text-sm">

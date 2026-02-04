@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { markNotificationAsRead, markAllNotificationsAsRead } from '@/api/notifications';
+import { toast } from '@/hooks/use-toast';
 
 interface LayoutProps {
   children: ReactNode;
@@ -39,8 +41,40 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
 
   const userNotifications = notifications.filter(n => n.userId === user?.id || (user?.role === 'librarian' && n.userId === '1'));
+
+  const handleMarkNotificationRead = async (notificationId: string) => {
+    try {
+      await markNotificationAsRead(notificationId);
+      markNotificationRead(notificationId);
+    } catch (error) {
+      toast({
+        title: 'Failed to mark as read',
+        description: error instanceof Error ? error.message : 'An error occurred',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    setIsMarkingAllRead(true);
+    try {
+      const result = await markAllNotificationsAsRead();
+      // Update all notifications as read in the context
+      userNotifications.forEach(notification => {
+        if (!notification.read) {
+          markNotificationRead(notification.id);
+        }
+      });
+      return result;
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsMarkingAllRead(false);
+    }
+  };
 
   const librarianLinks = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -83,7 +117,9 @@ export function Layout({ children }: LayoutProps) {
             <ThemeToggle />
             <NotificationBell 
               notifications={userNotifications} 
-              onMarkRead={markNotificationRead} 
+              onMarkRead={handleMarkNotificationRead}
+              onMarkAllRead={handleMarkAllNotificationsRead}
+              isLoading={isMarkingAllRead}
             />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
