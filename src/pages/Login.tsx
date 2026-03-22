@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { BookOpen, Mail, Lock, ArrowRight, Loader2, User } from 'lucide-react';
+import { BookOpen, Mail, Lock, ArrowRight, Loader2, User, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from '@/hooks/use-toast';
+import { validateEmail, validateName, validatePassword } from '@/utils/validation';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -16,11 +17,44 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const { login, signup } = useAuth();
   const navigate = useNavigate();
 
+  const validateForm = (): boolean => {
+    const newErrors: { [key: string]: string } = {};
+
+    // Validate email
+    const emailError = validateEmail(email);
+    if (emailError) {
+      newErrors.email = emailError;
+    }
+
+    // Validate password
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      newErrors.password = passwordError;
+    }
+
+    // Validate name for signup
+    if (!isLogin) {
+      const nameError = validateName(name);
+      if (nameError) {
+        newErrors.name = nameError;
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     setIsLoading(true);
 
     let success;
@@ -153,13 +187,24 @@ export default function Login() {
                         type="text"
                         placeholder="John Doe"
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="pl-10"
+                        onChange={(e) => {
+                          setName(e.target.value);
+                          if (errors.name) {
+                            setErrors({ ...errors, name: '' });
+                          }
+                        }}
+                        className={`pl-10 ${errors.name ? 'border-destructive' : ''}`}
                         required
                         minLength={2}
                         maxLength={50}
                       />
                     </div>
+                    {errors.name && (
+                      <div className="flex items-center gap-2 text-destructive text-sm">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.name}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -172,11 +217,22 @@ export default function Login() {
                       type="email"
                       placeholder="you@example.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (errors.email) {
+                          setErrors({ ...errors, email: '' });
+                        }
+                      }}
+                      className={`pl-10 ${errors.email ? 'border-destructive' : ''}`}
                       required
                     />
                   </div>
+                  {errors.email && (
+                    <div className="flex items-center gap-2 text-destructive text-sm">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.email}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -188,12 +244,28 @@ export default function Login() {
                       type="password"
                       placeholder="••••••••"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10"
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (errors.password) {
+                          setErrors({ ...errors, password: '' });
+                        }
+                      }}
+                      className={`pl-10 ${errors.password ? 'border-destructive' : ''}`}
                       required
                       minLength={8}
                     />
                   </div>
+                  {errors.password && (
+                    <div className="flex items-center gap-2 text-destructive text-sm">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.password}
+                    </div>
+                  )}
+                  {!isLogin && (
+                    <div className="text-xs text-muted-foreground">
+                      Password must contain at least 8 characters, including uppercase, lowercase, and numbers
+                    </div>
+                  )}
                 </div>
 
                 {isLogin && (

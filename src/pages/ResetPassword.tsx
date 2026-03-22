@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Lock, ArrowLeft, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Lock, ArrowLeft, Loader2, CheckCircle, AlertTriangle, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from '@/hooks/use-toast';
 import { resetPassword } from '@/api/auth';
+import { validatePassword, validatePasswordMatch } from '@/utils/validation';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -18,6 +19,7 @@ export default function ResetPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,18 +32,21 @@ export default function ResetPassword() {
   }, [searchParams]);
 
   const validateForm = (): boolean => {
-    if (!newPassword || newPassword.length < 8) {
-      setError('Password must be at least 8 characters long');
-      return false;
+    const newErrors: { [key: string]: string } = {};
+
+    // Validate password match (this also validates password requirements)
+    const passwordMatchError = validatePasswordMatch(newPassword, confirmPassword);
+    if (passwordMatchError) {
+      if (passwordMatchError.includes('at least') || passwordMatchError.includes('less than') || passwordMatchError.includes('must contain')) {
+        newErrors.newPassword = passwordMatchError;
+      } else if (passwordMatchError.includes('do not match')) {
+        newErrors.confirmPassword = passwordMatchError;
+      }
     }
-    
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
-      return false;
-    }
-    
+
+    setErrors(newErrors);
     setError('');
-    return true;
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -195,13 +200,24 @@ export default function ResetPassword() {
                           type="password"
                           placeholder="Enter new password"
                           value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          className="pl-10"
+                          onChange={(e) => {
+                            setNewPassword(e.target.value);
+                            if (errors.newPassword || errors.confirmPassword) {
+                              setErrors({ ...errors, newPassword: '', confirmPassword: '' });
+                            }
+                          }}
+                          className={`pl-10 ${errors.newPassword ? 'border-destructive' : ''}`}
                           required
                           minLength={8}
                           disabled={!!error}
                         />
                       </div>
+                      {errors.newPassword && (
+                        <div className="flex items-center gap-2 text-destructive text-sm">
+                          <AlertCircle className="h-4 w-4" />
+                          {errors.newPassword}
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -213,13 +229,28 @@ export default function ResetPassword() {
                           type="password"
                           placeholder="Confirm new password"
                           value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="pl-10"
+                          onChange={(e) => {
+                            setConfirmPassword(e.target.value);
+                            if (errors.confirmPassword) {
+                              setErrors({ ...errors, confirmPassword: '' });
+                            }
+                          }}
+                          className={`pl-10 ${errors.confirmPassword ? 'border-destructive' : ''}`}
                           required
                           minLength={8}
                           disabled={!!error}
                         />
                       </div>
+                      {errors.confirmPassword && (
+                        <div className="flex items-center gap-2 text-destructive text-sm">
+                          <AlertCircle className="h-4 w-4" />
+                          {errors.confirmPassword}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-xs text-muted-foreground">
+                      Password must contain at least 8 characters, including uppercase, lowercase, and numbers
                     </div>
 
                     <Button 
