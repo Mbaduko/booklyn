@@ -196,6 +196,18 @@ export default function Login() {
                   </div>
                 </div>
 
+                {isLogin && (
+                  <div className="text-right">
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto font-normal text-sm"
+                      onClick={() => navigate('/forgot-password')}
+                    >
+                      Forgot password?
+                    </Button>
+                  </div>
+                )}
+
                 <Button 
                   type="submit" 
                   variant="emerald" 
