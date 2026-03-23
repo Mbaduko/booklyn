@@ -271,6 +271,7 @@ export default function Login() {
                 {isLogin && (
                   <div className="text-right">
                     <Button
+                      type="button"
                       variant="link"
                       className="p-0 h-auto font-normal text-sm"
                       onClick={() => navigate('/forgot-password')}
@@ -302,6 +303,7 @@ export default function Login() {
                 <p className="text-sm text-muted-foreground">
                   {isLogin ? "Don't have an account?" : "Already have an account?"}
                   <Button
+                    type="button"
                     variant="link"
                     className="p-0 ml-1 h-auto font-normal"
                     onClick={() => {
