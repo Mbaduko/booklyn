@@ -205,6 +205,9 @@ export default function Login() {
                         {errors.name}
                       </div>
                     )}
+                    <div className="text-xs text-muted-foreground">
+                      Name must contain only alphabetic characters (letters and spaces only)
+                    </div>
                   </div>
                 )}
 

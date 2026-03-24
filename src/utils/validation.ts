@@ -49,6 +49,11 @@ export function validateName(name: string): string | null {
     return 'Name must be less than 50 characters';
   }
   
+  // Check for alphabetic characters only (letters and spaces)
+  if (!/^[a-zA-Z\s]+$/.test(name)) {
+    return 'Name must contain only alphabetic characters (no numbers or special characters)';
+  }
+  
   return null;
 }
 
