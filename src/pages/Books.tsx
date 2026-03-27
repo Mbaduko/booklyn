@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { Layout } from '@/components/Layout';
@@ -54,11 +54,186 @@ export default function Books() {
     publishedYear: new Date().getFullYear(),
   });
 
+  const [formErrors, setFormErrors] = useState<{
+    title?: string;
+    author?: string;
+    category?: string;
+    isbn?: string;
+    totalCopies?: string;
+    publishedYear?: string;
+  }>({});
+
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string>('');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const isLibrarian = user?.role === 'librarian';
+
+  // Common book categories
+  const bookCategories = [
+    'Fiction',
+    'Non-Fiction',
+    'Science Fiction',
+    'Fantasy',
+    'Mystery',
+    'Thriller',
+    'Romance',
+    'Biography',
+    'History',
+    'Self-Help',
+    'Business',
+    'Technology',
+    'Programming',
+    'Science',
+    'Mathematics',
+    'Philosophy',
+    'Religion',
+    'Art',
+    'Music',
+    'Sports',
+    'Travel',
+    'Cooking',
+    'Health',
+    'Psychology',
+    'Education',
+    'Children',
+    'Young Adult',
+    'Poetry',
+    'Drama',
+    'Comics',
+  ];
+
+  // Form validation function
+  const validateForm = () => {
+    const errors: typeof formErrors = {};
+    
+    if (!formData.title.trim()) {
+      errors.title = 'Title is required';
+    } else if (formData.title.trim().length < 2) {
+      errors.title = 'Title must be at least 2 characters';
+    }
+    
+    if (!formData.author.trim()) {
+      errors.author = 'Author is required';
+    } else if (formData.author.trim().length < 2) {
+      errors.author = 'Author must be at least 2 characters';
+    }
+    
+    if (!formData.category.trim()) {
+      errors.category = 'Category is required';
+    }
+    
+    if (!formData.isbn.trim()) {
+      errors.isbn = 'ISBN is required';
+    } else if (!/^(?:978|979)?[0-9]{9}[0-9X]$/.test(formData.isbn.replace(/[-\s]/g, ''))) {
+      errors.isbn = 'ISBN must be 10 or 13 digits (e.g., 978-0-123456-78-9)';
+    }
+    
+    if (!formData.totalCopies || formData.totalCopies < 1) {
+      errors.totalCopies = 'Total copies must be at least 1';
+    }
+    
+    if (!formData.publishedYear || formData.publishedYear < 1000 || formData.publishedYear > new Date().getFullYear() + 1) {
+      errors.publishedYear = 'Please enter a valid year';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleAddBook = async () => {
+    if (!isLibrarian) return;
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      const formDataToSend = new FormData();
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('author', formData.author);
+      formDataToSend.append('category', formData.category);
+      formDataToSend.append('isbn', formData.isbn);
+      formDataToSend.append('totalCopies', formData.totalCopies.toString());
+      formDataToSend.append('publishedYear', formData.publishedYear.toString());
+      formDataToSend.append('description', formData.description);
+      
+      if (coverImage) {
+        formDataToSend.append('coverImage', coverImage);
+      }
+
+      await createBook(formDataToSend);
+      
+      await refetchBooks();
+      setIsAddDialogOpen(false);
+      resetForm();
+      toast({
+        title: 'Book added',
+        description: `${formData.title} has been added to the catalog.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to add book',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'Error',
+          description: 'Image size must be less than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'Error',
+          description: 'Please select an image file',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setCoverImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeCoverImage = () => {
+    setCoverImage(null);
+    setCoverImagePreview('');
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      author: '',
+      category: '',
+      isbn: '',
+      totalCopies: 1,
+      description: '',
+      publishedYear: new Date().getFullYear(),
+    });
+    setFormErrors({});
+    setCoverImage(null);
+    setCoverImagePreview('');
+  };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -122,6 +297,210 @@ export default function Books() {
             </Button>
           </motion.div>
         </div>
+        
+        {/* Add Book Dialog for empty state */}
+        <Dialog 
+          open={isAddDialogOpen} 
+          onOpenChange={setIsAddDialogOpen}
+        >
+          <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>Add New Book</DialogTitle>
+              <DialogDescription>
+                Add a new book to your library catalog
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="title-empty" className={formErrors.title ? "text-destructive" : ""}>
+                  Title <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="title-empty"
+                  value={formData.title}
+                  onChange={(e) => {
+                    setFormData({ ...formData, title: e.target.value });
+                    if (formErrors.title) {
+                      setFormErrors({ ...formErrors, title: undefined });
+                    }
+                  }}
+                  className={formErrors.title ? "border-destructive" : ""}
+                  placeholder="Enter book title"
+                />
+                {formErrors.title && (
+                  <p className="text-sm text-destructive">{formErrors.title}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="author-empty" className={formErrors.author ? "text-destructive" : ""}>
+                  Author <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="author-empty"
+                  value={formData.author}
+                  onChange={(e) => {
+                    setFormData({ ...formData, author: e.target.value });
+                    if (formErrors.author) {
+                      setFormErrors({ ...formErrors, author: undefined });
+                    }
+                  }}
+                  className={formErrors.author ? "border-destructive" : ""}
+                  placeholder="Enter author name"
+                />
+                {formErrors.author && (
+                  <p className="text-sm text-destructive">{formErrors.author}</p>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category-empty" className={formErrors.category ? "text-destructive" : ""}>
+                    Category <span className="text-destructive">*</span>
+                  </Label>
+                  <Select value={formData.category} onValueChange={(value) => {
+                    setFormData({ ...formData, category: value });
+                    if (formErrors.category) {
+                      setFormErrors({ ...formErrors, category: undefined });
+                    }
+                  }}>
+                    <SelectTrigger className={formErrors.category ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bookCategories.map(category => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formErrors.category && (
+                    <p className="text-sm text-destructive">{formErrors.category}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="isbn-empty" className={formErrors.isbn ? "text-destructive" : ""}>
+                    ISBN <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="isbn-empty"
+                    value={formData.isbn}
+                    onChange={(e) => {
+                      setFormData({ ...formData, isbn: e.target.value });
+                      if (formErrors.isbn) {
+                        setFormErrors({ ...formErrors, isbn: undefined });
+                      }
+                    }}
+                    className={formErrors.isbn ? "border-destructive" : ""}
+                    placeholder="9780123456789 or 978-0-123456-78-9"
+                  />
+                  {formErrors.isbn && (
+                    <p className="text-sm text-destructive">{formErrors.isbn}</p>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="copies-empty" className={formErrors.totalCopies ? "text-destructive" : ""}>
+                    Total Copies <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="copies-empty"
+                    type="number"
+                    min={1}
+                    value={formData.totalCopies}
+                    onChange={(e) => {
+                      setFormData({ ...formData, totalCopies: parseInt(e.target.value) || 1 });
+                      if (formErrors.totalCopies) {
+                        setFormErrors({ ...formErrors, totalCopies: undefined });
+                      }
+                    }}
+                    className={formErrors.totalCopies ? "border-destructive" : ""}
+                  />
+                  {formErrors.totalCopies && (
+                    <p className="text-sm text-destructive">{formErrors.totalCopies}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="year-empty" className={formErrors.publishedYear ? "text-destructive" : ""}>
+                    Published Year <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="year-empty"
+                    type="number"
+                    value={formData.publishedYear}
+                    onChange={(e) => {
+                      setFormData({ ...formData, publishedYear: parseInt(e.target.value) });
+                      if (formErrors.publishedYear) {
+                        setFormErrors({ ...formErrors, publishedYear: undefined });
+                      }
+                    }}
+                    className={formErrors.publishedYear ? "border-destructive" : ""}
+                    min={1000}
+                    max={new Date().getFullYear() + 1}
+                  />
+                  {formErrors.publishedYear && (
+                    <p className="text-sm text-destructive">{formErrors.publishedYear}</p>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description-empty">Description</Label>
+                <Textarea
+                  id="description-empty"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="coverImage-empty">Cover Image (Optional)</Label>
+                <div className="flex items-center gap-4">
+                  {coverImagePreview ? (
+                    <div className="relative">
+                      <img 
+                        src={coverImagePreview} 
+                        alt="Cover preview" 
+                        className="h-20 w-16 object-cover rounded"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                        onClick={removeCoverImage}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="h-20 w-16 border-2 border-dashed border-muted-foreground/25 rounded flex items-center justify-center">
+                      <Upload className="h-6 w-6 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <Input
+                      id="coverImage-empty"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="cursor-pointer"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      JPG, PNG, WebP (max 5MB)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="emerald" onClick={handleAddBook} disabled={isLoading}>
+                {isLoading ? 'Adding...' : 'Add Book'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </Layout>
     );
   }
@@ -140,40 +519,6 @@ export default function Books() {
     }
   };
 
-  // Common book categories
-  const bookCategories = [
-    'Fiction',
-    'Non-Fiction',
-    'Science Fiction',
-    'Fantasy',
-    'Mystery',
-    'Thriller',
-    'Romance',
-    'Biography',
-    'History',
-    'Self-Help',
-    'Business',
-    'Technology',
-    'Programming',
-    'Science',
-    'Mathematics',
-    'Philosophy',
-    'Religion',
-    'Art',
-    'Music',
-    'Sports',
-    'Travel',
-    'Cooking',
-    'Health',
-    'Psychology',
-    'Education',
-    'Children',
-    'Young Adult',
-    'Poetry',
-    'Drama',
-    'Comics',
-  ];
-
   const categories = [...new Set(books.map(b => b.category))];
 
   const filteredBooks = books.filter(book => {
@@ -184,46 +529,6 @@ export default function Books() {
     const matchesCategory = categoryFilter === 'all' || book.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
-
-  const handleAddBook = async () => {
-    if (!isLibrarian) return;
-    
-    try {
-      setIsLoading(true);
-      
-      const formDataToSend = new FormData();
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('author', formData.author);
-      formDataToSend.append('category', formData.category);
-      formDataToSend.append('isbn', formData.isbn);
-      formDataToSend.append('totalCopies', formData.totalCopies.toString());
-      formDataToSend.append('publishedYear', formData.publishedYear.toString());
-      formDataToSend.append('description', formData.description);
-      
-      if (coverImage) {
-        formDataToSend.append('coverImage', coverImage);
-      }
-
-      await createBook(formDataToSend);
-      
-      await refetchBooks();
-      setIsAddDialogOpen(false);
-      resetForm();
-      toast({
-        title: 'Book added',
-        description: `${formData.title} has been added to the catalog.`,
-      });
-    } catch (error) {
-      console.error('Failed to add book:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to add book',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleEditBook = async () => {
     if (!isLibrarian || !selectedBook) return;
@@ -264,55 +569,6 @@ export default function Books() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      author: '',
-      category: '',
-      isbn: '',
-      totalCopies: 1,
-      description: '',
-      publishedYear: new Date().getFullYear(),
-    });
-    setCoverImage(null);
-    setCoverImagePreview('');
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: 'Error',
-          description: 'Image size must be less than 5MB',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: 'Error',
-          description: 'Please select an image file',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      setCoverImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removeCoverImage = () => {
-    setCoverImage(null);
-    setCoverImagePreview('');
   };
 
   const openEditDialog = (book: Book) => {
@@ -466,7 +722,10 @@ export default function Books() {
         )}
 
         {/* Add Book Dialog */}
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <Dialog 
+          open={isAddDialogOpen} 
+          onOpenChange={setIsAddDialogOpen}
+        >
           <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>Add New Book</DialogTitle>
@@ -476,26 +735,57 @@ export default function Books() {
             </DialogHeader>
             <div className="flex-1 overflow-y-auto space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
+                <Label htmlFor="title" className={formErrors.title ? "text-destructive" : ""}>
+                  Title <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="title"
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, title: e.target.value });
+                    if (formErrors.title) {
+                      setFormErrors({ ...formErrors, title: undefined });
+                    }
+                  }}
+                  className={formErrors.title ? "border-destructive" : ""}
+                  placeholder="Enter book title"
                 />
+                {formErrors.title && (
+                  <p className="text-sm text-destructive">{formErrors.title}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="author">Author</Label>
+                <Label htmlFor="author" className={formErrors.author ? "text-destructive" : ""}>
+                  Author <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="author"
                   value={formData.author}
-                  onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, author: e.target.value });
+                    if (formErrors.author) {
+                      setFormErrors({ ...formErrors, author: undefined });
+                    }
+                  }}
+                  className={formErrors.author ? "border-destructive" : ""}
+                  placeholder="Enter author name"
                 />
+                {formErrors.author && (
+                  <p className="text-sm text-destructive">{formErrors.author}</p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                    <SelectTrigger>
+                  <Label htmlFor="category" className={formErrors.category ? "text-destructive" : ""}>
+                    Category <span className="text-destructive">*</span>
+                  </Label>
+                  <Select value={formData.category} onValueChange={(value) => {
+                    setFormData({ ...formData, category: value });
+                    if (formErrors.category) {
+                      setFormErrors({ ...formErrors, category: undefined });
+                    }
+                  }}>
+                    <SelectTrigger className={formErrors.category ? "border-destructive" : ""}>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -506,35 +796,74 @@ export default function Books() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {formErrors.category && (
+                    <p className="text-sm text-destructive">{formErrors.category}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="isbn">ISBN</Label>
+                  <Label htmlFor="isbn" className={formErrors.isbn ? "text-destructive" : ""}>
+                    ISBN <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="isbn"
                     value={formData.isbn}
-                    onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, isbn: e.target.value });
+                      if (formErrors.isbn) {
+                        setFormErrors({ ...formErrors, isbn: undefined });
+                      }
+                    }}
+                    className={formErrors.isbn ? "border-destructive" : ""}
+                    placeholder="9780123456789 or 978-0-123456-78-9"
                   />
+                  {formErrors.isbn && (
+                    <p className="text-sm text-destructive">{formErrors.isbn}</p>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="copies">Total Copies</Label>
+                  <Label htmlFor="copies" className={formErrors.totalCopies ? "text-destructive" : ""}>
+                    Total Copies <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="copies"
                     type="number"
                     min={1}
                     value={formData.totalCopies}
-                    onChange={(e) => setFormData({ ...formData, totalCopies: parseInt(e.target.value) || 1 })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, totalCopies: parseInt(e.target.value) || 1 });
+                      if (formErrors.totalCopies) {
+                        setFormErrors({ ...formErrors, totalCopies: undefined });
+                      }
+                    }}
+                    className={formErrors.totalCopies ? "border-destructive" : ""}
                   />
+                  {formErrors.totalCopies && (
+                    <p className="text-sm text-destructive">{formErrors.totalCopies}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="year">Published Year</Label>
+                  <Label htmlFor="year" className={formErrors.publishedYear ? "text-destructive" : ""}>
+                    Published Year <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="year"
                     type="number"
                     value={formData.publishedYear}
-                    onChange={(e) => setFormData({ ...formData, publishedYear: parseInt(e.target.value) })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, publishedYear: parseInt(e.target.value) });
+                      if (formErrors.publishedYear) {
+                        setFormErrors({ ...formErrors, publishedYear: undefined });
+                      }
+                    }}
+                    className={formErrors.publishedYear ? "border-destructive" : ""}
+                    min={1000}
+                    max={new Date().getFullYear() + 1}
                   />
+                  {formErrors.publishedYear && (
+                    <p className="text-sm text-destructive">{formErrors.publishedYear}</p>
+                  )}
                 </div>
               </div>
               <div className="space-y-2">
